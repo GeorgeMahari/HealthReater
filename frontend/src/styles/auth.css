@@ -107,6 +107,19 @@
   margin-top: 24px;
 }
 
+.auth-name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 420px) {
+  .auth-name-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
 .auth-form .field-control.has-trailing .input {
   padding-right: 46px;
 }

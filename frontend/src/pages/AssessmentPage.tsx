@@ -5,7 +5,8 @@ import { sections, type FieldDef } from "../data/sections";
 import { FieldInput } from "../components/FieldInput";
 import { ProgressBar } from "../components/ProgressBar";
 import { useAssessment } from "../context/AssessmentContext";
-import { calculateHealthRating, HealthRatingApiError } from "../api/healthRatingApi";
+import { calculateHealthRating, HealthRatingApiError, saveAssessment } from "../api/healthRatingApi";
+import { useAuth } from "../context/AuthContext";
 import { sectionIcons } from "../data/uiMeta";
 import type { AssessmentInput } from "../types";
 
@@ -30,6 +31,7 @@ function validateField(field: FieldDef, value: unknown): string | undefined {
 
 export function AssessmentPage() {
   const { assessment, updateField, setResult } = useAssessment();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -85,7 +87,10 @@ export function AssessmentPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const result = await calculateHealthRating(assessment as AssessmentInput);
+      // Signed-in users get the result saved to their history; guests just get it calculated.
+      const result = user
+        ? await saveAssessment(assessment as AssessmentInput)
+        : await calculateHealthRating(assessment as AssessmentInput);
       setResult(result);
       navigate("/results");
     } catch (err) {

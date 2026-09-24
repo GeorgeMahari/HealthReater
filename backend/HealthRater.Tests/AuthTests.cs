@@ -1,4 +1,5 @@
 using HealthRater.Core.Auth;
+using HealthRater.Data.Services;
 using HealthRater.Tests.Framework;
 
 namespace HealthRater.Tests;
@@ -35,59 +36,65 @@ public static class AuthTests
 
         ("Auth: valid registration passes validation", () =>
         {
-            var outcome = AuthValidator.ValidateRegistration("Ana", "ana@example.com", "Secret123");
+            var outcome = AuthValidator.ValidateRegistration("Ana", "Popescu", "ana@example.com", "Secret123");
             Assert.True(outcome.IsValid, "Valid registration");
         }),
 
-        ("Auth: registration rejects empty name, bad email and weak password", () =>
+        ("Auth: registration rejects empty names, bad email and weak password", () =>
         {
-            Assert.False(AuthValidator.ValidateRegistration(" ", "ana@example.com", "Secret123").IsValid, "Empty name");
-            Assert.False(AuthValidator.ValidateRegistration("Ana", "ana@", "Secret123").IsValid, "Bad email");
-            Assert.False(AuthValidator.ValidateRegistration("Ana", "Ana <ana@example.com>", "Secret123").IsValid, "Display-name email");
-            Assert.False(AuthValidator.ValidateRegistration("Ana", "ana@example.com", "short1").IsValid, "Too short");
-            Assert.False(AuthValidator.ValidateRegistration("Ana", "ana@example.com", "onlyletters").IsValid, "No digit");
-            Assert.False(AuthValidator.ValidateRegistration("Ana", "ana@example.com", "12345678").IsValid, "No letter");
+            Assert.False(AuthValidator.ValidateRegistration(" ", "Popescu", "ana@example.com", "Secret123").IsValid, "Empty first name");
+            Assert.False(AuthValidator.ValidateRegistration("Ana", "", "ana@example.com", "Secret123").IsValid, "Empty last name");
+            Assert.False(AuthValidator.ValidateRegistration("Ana", "Popescu", "ana@", "Secret123").IsValid, "Bad email");
+            Assert.False(AuthValidator.ValidateRegistration("Ana", "Popescu", "Ana <ana@example.com>", "Secret123").IsValid, "Display-name email");
+            Assert.False(AuthValidator.ValidateRegistration("Ana", "Popescu", "ana@example.com", "short1").IsValid, "Too short");
+            Assert.False(AuthValidator.ValidateRegistration("Ana", "Popescu", "ana@example.com", "onlyletters").IsValid, "No digit");
+            Assert.False(AuthValidator.ValidateRegistration("Ana", "Popescu", "ana@example.com", "12345678").IsValid, "No letter");
         }),
 
-        ("Auth: user store creates, finds (case-insensitive email) and blocks duplicates", () =>
+        ("Auth: users are stored with a normalized, unique email", () =>
         {
-            WithTempStore(path =>
-            {
-                var store = new JsonFileUserStore(path);
-                var created = store.CreateAsync(" Ana ", "Ana@Example.com", "hash").GetAwaiter().GetResult();
-                Assert.True(created is not null, "User created");
-                Assert.Equal("ana@example.com", created!.Email, "Email normalized");
-                Assert.Equal("Ana", created.Name, "Name trimmed");
+            using var db = TestDatabase.Create();
+            var users = new UserService(db.Context);
+            var created = users.CreateAsync(" Ana ", "Popescu", "Ana@Example.com", "hash").GetAwaiter().GetResult();
+            Assert.True(created is not null, "User created");
+            Assert.Equal("ana@example.com", created!.Email, "Email normalized");
+            Assert.Equal("Ana", created.FirstName, "First name trimmed");
 
-                var found = store.FindByEmailAsync("ANA@example.COM ").GetAwaiter().GetResult();
-                Assert.Equal(created.Id, found?.Id, "Found by email regardless of case");
+            var found = users.FindByEmailAsync("ANA@example.COM ").GetAwaiter().GetResult();
+            Assert.Equal(created.Id, found?.Id, "Found by email regardless of case");
 
-                var duplicate = store.CreateAsync("Other", "ana@example.com", "hash2").GetAwaiter().GetResult();
-                Assert.True(duplicate is null, "Duplicate email rejected");
-            });
+            var duplicate = users.CreateAsync("Other", "Person", "ana@example.com", "hash2").GetAwaiter().GetResult();
+            Assert.True(duplicate is null, "Duplicate email rejected");
         }),
 
-        ("Auth: user store persists users to disk", () =>
+        ("Auth: sessions store only a hash, validate, and stop working once revoked", () =>
         {
-            WithTempStore(path =>
-            {
-                var created = new JsonFileUserStore(path).CreateAsync("Ana", "ana@example.com", "hash").GetAwaiter().GetResult();
-                var reloaded = new JsonFileUserStore(path).FindByIdAsync(created!.Id).GetAwaiter().GetResult();
-                Assert.Equal("ana@example.com", reloaded?.Email, "User reloaded from file");
-            });
+            using var db = TestDatabase.Create();
+            var user = TestDatabase.AddUser(db.Context, "ana@example.com");
+            var sessions = new SessionService(db.Context);
+
+            var raw = sessions.CreateAsync(user.Id).GetAwaiter().GetResult();
+            var stored = db.Context.RefreshTokens.Single();
+            Assert.False(stored.TokenHash == raw, "Raw token is not stored");
+            Assert.Equal(SessionService.Hash(raw), stored.TokenHash, "SHA-256 hash is stored");
+
+            Assert.Equal(user.Id, sessions.ValidateAsync(raw).GetAwaiter().GetResult(), "Valid session resolves to its user");
+            Assert.True(sessions.ValidateAsync(raw + "x").GetAwaiter().GetResult() is null, "Unknown token rejected");
+
+            sessions.RevokeAsync(raw).GetAwaiter().GetResult();
+            Assert.True(sessions.ValidateAsync(raw).GetAwaiter().GetResult() is null, "Revoked session rejected");
+        }),
+
+        ("Auth: sessions of a deactivated user are rejected", () =>
+        {
+            using var db = TestDatabase.Create();
+            var user = TestDatabase.AddUser(db.Context, "ana@example.com");
+            var sessions = new SessionService(db.Context);
+            var raw = sessions.CreateAsync(user.Id).GetAwaiter().GetResult();
+
+            user.IsActive = false;
+            db.Context.SaveChanges();
+            Assert.True(sessions.ValidateAsync(raw).GetAwaiter().GetResult() is null, "Inactive user's session rejected");
         }),
     };
-
-    private static void WithTempStore(Action<string> test)
-    {
-        var dir = Path.Combine(Path.GetTempPath(), "healthrater-tests-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            test(Path.Combine(dir, "users.json"));
-        }
-        finally
-        {
-            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
-        }
-    }
 }

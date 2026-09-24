@@ -5,6 +5,12 @@ namespace HealthRater.Core.Scoring;
 
 public static class HealthRatingEngine
 {
+    /// <summary>
+    /// Identifies the scoring rules in ScoringConfig. Stored with every saved assessment;
+    /// bump it whenever a threshold or formula changes so historical results stay traceable.
+    /// </summary>
+    public const string ScoringVersion = "2026.09-provisional";
+
     // Canonical parameter keys, in the official 1-39 order.
     public static class Keys
     {

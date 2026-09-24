@@ -287,6 +287,30 @@
   margin-bottom: 30px;
 }
 
+.saved-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: -18px 0 26px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.saved-note-guest {
+  background: rgba(19, 42, 51, 0.05);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.saved-note-guest a {
+  color: var(--color-primary);
+  font-weight: 650;
+}
+
 .results-total {
   width: min(540px, 100%);
 }

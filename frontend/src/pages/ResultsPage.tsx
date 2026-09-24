@@ -1,7 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Download, HeartPulse, RotateCcw, Ruler } from "lucide-react";
+import { CalendarCheck, Download, HeartPulse, RotateCcw, Ruler } from "lucide-react";
 import { useAssessment } from "../context/AssessmentContext";
+import { useAuth } from "../context/AuthContext";
 import { ScoreCard } from "../components/ScoreCard";
 import { TotalRatingCard } from "../components/TotalRatingCard";
 import { Tooltip } from "../components/Tooltip";
@@ -11,6 +12,7 @@ import type { AssessmentInput, HealthRatingResult } from "../types";
 
 export function ResultsPage() {
   const { result, assessment, resetAssessment } = useAssessment();
+  const { user } = useAuth();
 
   if (!result) {
     return <Navigate to="/assessment" replace />;
@@ -44,6 +46,23 @@ export function ResultsPage() {
         <h1 className="reveal" style={{ "--i": 0 } as CSSProperties}>
           Your personal health report
         </h1>
+
+        {result.completedAt ? (
+          <p className="saved-note reveal" style={{ "--i": 1 } as CSSProperties}>
+            <CalendarCheck size={15} strokeWidth={2} aria-hidden="true" />
+            Saved to your history ·{" "}
+            <time dateTime={result.completedAt}>{formatLocalDateTime(result.completedAt)}</time>
+          </p>
+        ) : (
+          !user && (
+            <p className="saved-note saved-note-guest reveal" style={{ "--i": 1 } as CSSProperties}>
+              <Link to="/login" state={{ from: "/assessment" }}>
+                Log in
+              </Link>{" "}
+              to keep every assessment in your personal health history.
+            </p>
+          )
+        )}
 
         <TotalRatingCard
           total={totalHealthRating}
@@ -258,6 +277,11 @@ function saveResult(assessment: AssessmentInput, result: HealthRatingResult) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/** e.g. "25 September 2026, 14:32" in the viewer's own time zone and locale. */
+function formatLocalDateTime(isoUtc: string): string {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "long", timeStyle: "short" }).format(new Date(isoUtc));
 }
 
 function formatKey(key: string): string {

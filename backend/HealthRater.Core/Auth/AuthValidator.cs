@@ -11,19 +11,12 @@ public static class AuthValidator
 
     public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
-    public static ValidationOutcome ValidateRegistration(string? name, string? email, string? password)
+    public static ValidationOutcome ValidateRegistration(string? firstName, string? lastName, string? email, string? password)
     {
         var outcome = new ValidationOutcome();
 
-        var trimmedName = name?.Trim() ?? "";
-        if (trimmedName.Length == 0)
-        {
-            outcome.Errors.Add("Name is required.");
-        }
-        else if (trimmedName.Length > MaxNameLength)
-        {
-            outcome.Errors.Add($"Name must be at most {MaxNameLength} characters.");
-        }
+        ValidateName(firstName, "First name", outcome);
+        ValidateName(lastName, "Last name", outcome);
 
         if (!IsValidEmail(email))
         {
@@ -32,6 +25,19 @@ public static class AuthValidator
 
         outcome.Errors.AddRange(PasswordErrors(password));
         return outcome;
+    }
+
+    private static void ValidateName(string? value, string label, ValidationOutcome outcome)
+    {
+        var trimmed = value?.Trim() ?? "";
+        if (trimmed.Length == 0)
+        {
+            outcome.Errors.Add($"{label} is required.");
+        }
+        else if (trimmed.Length > MaxNameLength)
+        {
+            outcome.Errors.Add($"{label} must be at most {MaxNameLength} characters.");
+        }
     }
 
     public static bool IsValidEmail(string? email)

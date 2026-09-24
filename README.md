@@ -26,7 +26,14 @@ healthrater/
 │   │   │                         HydrationScorer, FunctionalPowerScorer,
 │   │   │                         BodyCompositionScorer, LifestyleScorers, ...
 │   │   └── Validation/           AssessmentValidator (DataAnnotations + cross-field rules)
-│   ├── HealthRater.Api/         ASP.NET Core Web API — POST /api/health-rating/calculate
+│   ├── HealthRater.Data/        EF Core persistence (users, sessions, assessment history)
+│   │   ├── Entities/             User, RefreshToken, HealthAssessment, AssessmentParameterScore
+│   │   ├── HealthRaterDbContext.cs   model + SQLite / SQL Server context subclasses
+│   │   ├── Migrations/Sqlite/    migrations for the SQLite provider (development default)
+│   │   ├── Migrations/SqlServer/ migrations for the SQL Server provider
+│   │   ├── Snapshots/            ParameterCatalog (39 params) + AssessmentSnapshotBuilder
+│   │   └── Services/             UserService, SessionService, AssessmentService
+│   ├── HealthRater.Api/         ASP.NET Core Web API — calculate, auth, assessments
 │   └── HealthRater.Tests/       dependency-free console test runner (see note below)
 │
 ├── frontend/                    React + Vite + TypeScript
@@ -53,8 +60,12 @@ healthrater/
 ### Backend (.NET API)
 ```bash
 cd backend/HealthRater.Api
-dotnet run --urls http://localhost:5080
+dotnet run          # http://localhost:5080 (see Properties/launchSettings.json)
 ```
+In Development the SQLite database (`App_Data/healthrater.db`) is created and migrated
+automatically on startup — no setup needed. See [Database](#database) for SQL Server
+and production.
+
 `POST http://localhost:5080/api/health-rating/calculate` with an `AssessmentInput` JSON body
 (see `python/healthrater/sample_profile.py` or the Postman-style example below).
 
@@ -175,7 +186,7 @@ user to the top bar. Frontend pages: `/login` and `/signup` (`src/pages/AuthPage
 
 | Endpoint | Body | Result |
 |---|---|---|
-| `POST /api/auth/register` | `{ name, email, password }` | `201` + user, signs in · `400` validation · `409` email taken |
+| `POST /api/auth/register` | `{ firstName, lastName, email, password }` | `201` + user, signs in · `400` validation · `409` email taken |
 | `POST /api/auth/login` | `{ email, password }` | `200` + user, signs in · `401` "Invalid email or password." |
 | `POST /api/auth/logout` | — | `204`, clears the session cookie |
 | `GET /api/auth/me` | — | `200` + user, or `204` when nobody is signed in |
@@ -184,16 +195,94 @@ user to the top bar. Frontend pages: `/login` and `/signup` (`src/pages/AuthPage
   (`HealthRater.Core/Auth/PasswordHasher.cs`). Plaintext is never stored or logged.
   Rules: 8–128 characters, at least one letter and one number.
 - **Session**: `healthrater.auth` cookie — `HttpOnly`, `SameSite=Lax`, 7-day sliding
-  expiry. The frontend calls the API with `credentials: "include"`; CORS allows
+  expiry. The cookie carries a random session token whose SHA-256 hash is a
+  `RefreshTokens` row (30-day absolute lifetime). Every request re-validates it, so
+  logging out revokes the session server-side — a copied cookie stops working
+  immediately. The frontend calls the API with `credentials: "include"`; CORS allows
   credentials for `localhost:5173` only.
 - **Brute-force protection**: register/login are rate-limited to 10 requests per
   minute per IP (`429` afterwards). Failed logins return the same message and take
   the same time whether or not the email exists.
-- **Storage**: `backend/HealthRater.Api/App_Data/users.json` (override with
-  `Auth:UserStorePath`). The folder is git-ignored because it holds password hashes.
-  It's a single-instance file store behind `IUserStore` — replace it with a
-  database-backed implementation for production.
+- **Storage**: the `Users` table (see [Database](#database)).
 - In production, serve the API over HTTPS so the cookie is only sent encrypted.
+
+## Assessment history
+
+Signed-in users' completed assessments are saved automatically (the frontend calls
+`POST /api/assessments` instead of `/calculate`); guests still get an unsaved result.
+All endpoints require a session and only ever touch the signed-in user's data — the
+owner comes from the session, never from the request. Someone else's id returns `404`.
+
+| Endpoint | Result |
+|---|---|
+| `POST /api/assessments` | Body: `AssessmentInput`. Validates, scores, stores. `201` + full snapshot |
+| `GET /api/assessments` | Completed assessments, newest first — summary only (no parameters) |
+| `GET /api/assessments/{id}` | Full snapshot: totals, four states, derived metrics, body & cardiovascular snapshot, all 39 parameters (raw value, unit, score) and the original input |
+| `GET /api/assessments/calendar?year=2026&month=9&timeZone=Europe/Bucharest` | Lightweight entries for one month; `date` is the local day in the given IANA time zone (default UTC) |
+| `DELETE /api/assessments/{id}` | `204`, or `404` if it isn't yours |
+
+**Historical stability.** Each assessment is an immutable snapshot: inputs, derived
+metrics, every parameter score and the `ScoringVersion` in force are stored at
+creation. Reading an assessment never re-runs the engine, so changing
+`ScoringConfig` later doesn't alter past results. New scans are always new rows.
+
+**Time.** Timestamps are stored in UTC and returned with a `Z` suffix; the frontend
+formats them in the viewer's own time zone.
+
+## Database
+
+EF Core 8 with two supported providers. Each has its own `DbContext` subclass and
+migrations folder (EF migrations are provider-specific); application code only uses
+`HealthRaterDbContext`.
+
+| Setting | Values | Default |
+|---|---|---|
+| `Database:Provider` | `Sqlite` · `SqlServer` | `Sqlite` |
+| `ConnectionStrings:Sqlite` | SQLite connection string (relative paths resolve from `HealthRater.Api/`) | `Data Source=App_Data/healthrater.db` |
+| `ConnectionStrings:SqlServer` | SQL Server connection string — **never commit one with a password** | — |
+| `Database:MigrateOnStartup` | apply pending migrations at startup (Development only) | `true` |
+| `Database:SeedDevelopmentData` | create a demo account with 3 fictional scans (Development only) | `false` |
+
+Any setting can come from an environment variable (`__` instead of `:`), e.g.
+`Database__Provider=SqlServer` and `ConnectionStrings__SqlServer=...`, or from
+`dotnet user-secrets` in `HealthRater.Api`.
+
+**Tables:** `Users` (unique email) → `RefreshTokens` (unique token hash) and
+`HealthAssessments` (indexed by user, completion date, and user+status+date) →
+`AssessmentParameterScores` (unique per assessment + key, check constraint
+`Score BETWEEN 1 AND 10`). Deleting a user or an assessment cascades to its children.
+
+### Development (SQLite — zero setup)
+Just run the API. The database file lives in `backend/HealthRater.Api/App_Data/`
+(git-ignored). Stop the API and delete that folder to start from an empty database.
+
+### SQL Server (local or production)
+```bash
+cd backend
+# Windows authentication against LocalDB — no password involved:
+export Database__Provider=SqlServer
+export ConnectionStrings__SqlServer="Server=(localdb)\MSSQLLocalDB;Database=HealthRater;Trusted_Connection=True;TrustServerCertificate=True"
+dotnet ef database update --context SqlServerHealthRaterDbContext --project HealthRater.Data --startup-project HealthRater.Api
+dotnet run --project HealthRater.Api
+```
+In production, set the same two variables in the hosting environment (with any password
+coming from the platform's secret store), apply migrations explicitly with
+`dotnet ef database update` or a migration bundle (`dotnet ef migrations bundle`);
+automatic migration only ever runs in Development.
+
+### Adding a migration after changing the model
+Add one for **each** provider (requires `dotnet tool install --global dotnet-ef`):
+```bash
+cd backend
+dotnet ef migrations add <Name> --context SqliteHealthRaterDbContext --project HealthRater.Data --startup-project HealthRater.Api --output-dir Migrations/Sqlite
+Database__Provider=SqlServer ConnectionStrings__SqlServer="Server=(localdb)\MSSQLLocalDB;Database=HealthRater;Trusted_Connection=True" dotnet ef migrations add <Name> --context SqlServerHealthRaterDbContext --project HealthRater.Data --startup-project HealthRater.Api --output-dir Migrations/SqlServer
+```
+
+### Demo data (development only)
+Set `Database:SeedDevelopmentData` to `true` in `appsettings.Development.json` and start
+the API: it creates **demo@healthrater.test** / `DemoPassword1` ("Demo Test Data") with
+three fictional assessments from the last four weeks. It never runs outside the
+Development environment.
 
 ## Validation
 
@@ -204,17 +293,14 @@ distance — plus range checks on every other numeric field. Errors are returned
 flat list of human-readable messages; the .NET API also auto-returns 400 for
 `[Range]` violations via ASP.NET's built-in model validation.
 
-## Important sandbox limitation: no NuGet access
+## Test runner and NuGet
 
-This container's network allowlist includes `archive.ubuntu.com`/`security.ubuntu.com`
-(which is how the .NET 8 SDK itself got installed via `apt`), npm's registry, and
-PyPI — but **not** `api.nuget.org`. That means:
-- **No Swashbuckle/Swagger** on the API (removed from the project; the endpoint still
-  works, there's just no `/swagger` UI — test it with curl/Postman/the frontend).
-- **No xUnit** in `HealthRater.Tests`. It's a small dependency-free console app instead
-  (`Framework/TestRunner.cs` — a `~50-line` assertion+runner pair with an xUnit-like
-  `Assert.*` API). All 38 tests pass; swap in real xUnit once NuGet is reachable — the
-  assertions were written to make that a low-effort migration, not a rewrite.
+The project was started in a sandbox without NuGet access, so `HealthRater.Tests` is a
+small dependency-free console runner (`Framework/TestRunner.cs`, xUnit-like `Assert.*`)
+and the API has no Swagger UI. NuGet is now enabled in `backend/NuGet.Config` (EF Core
+comes from it), so moving to xUnit/Swagger is possible whenever wanted. The suite has
+56 tests, including persistence tests that apply the real SQLite migrations to a
+private database per test.
 
 ## What's been executed (not just written)
 
@@ -235,15 +321,13 @@ PyPI — but **not** `api.nuget.org`. That means:
 
 ## Remaining limitations
 
-- No persistence/database — the API is stateless by design per the spec (no storage
-  requirement was given); results aren't saved server-side.
 - No automated end-to-end/UI tests (e.g. Playwright) for the React app — only manual
   verification (build + live server checks) plus the backend/Python unit suites.
 - The functional-power and age-scoring norm tables are intentionally simple
   piecewise tables, not full percentile curves — easy to swap for a richer table in
   `ScoringConfig`/`config.py` without touching any other file.
-- Accounts are stored in a local JSON file (single API instance); there's no
-  password reset, email verification or per-user result history yet.
+- No password reset or email verification yet, and no history/calendar UI yet — the
+  API for it exists (`/api/assessments`, `/api/assessments/calendar`).
 - `demo.html` is a convenience preview only — it duplicates the scoring formulas in
   vanilla JS so it can run standalone in the chat artifact viewer with no backend.
   The source of truth for scoring is `HealthRater.Core` (C#) and `healthrater/scoring`

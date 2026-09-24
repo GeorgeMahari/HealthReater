@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using HealthRater.Api.Dtos;
 using HealthRater.Core.Auth;
+using HealthRater.Data.Entities;
+using HealthRater.Data.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -13,17 +15,23 @@ namespace HealthRater.Api.Controllers;
 public class AuthController : ControllerBase
 {
     public const string RateLimitPolicy = "auth";
+
+    /// <summary>Claim carrying the raw session token; its hash is a <see cref="RefreshToken"/> row.</summary>
+    public const string SessionClaim = "sid";
+
     private const string InvalidCredentials = "Invalid email or password.";
 
     // Verified against when the email is unknown, so a failed login takes the same
     // time whether or not the account exists (no user enumeration via timing).
     private static readonly string DummyHash = PasswordHasher.Hash(Guid.NewGuid().ToString());
 
-    private readonly IUserStore _users;
+    private readonly UserService _users;
+    private readonly SessionService _sessions;
 
-    public AuthController(IUserStore users)
+    public AuthController(UserService users, SessionService sessions)
     {
         _users = users;
+        _sessions = sessions;
     }
 
     [HttpPost("register")]
@@ -33,13 +41,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<UserResponse>> Register([FromBody] RegisterRequest request)
     {
-        var validation = AuthValidator.ValidateRegistration(request.Name, request.Email, request.Password);
+        var validation = AuthValidator.ValidateRegistration(request.FirstName, request.LastName, request.Email, request.Password);
         if (!validation.IsValid)
         {
             return BadRequest(new { errors = validation.Errors });
         }
 
-        var user = await _users.CreateAsync(request.Name!, request.Email!, PasswordHasher.Hash(request.Password!));
+        var user = await _users.CreateAsync(
+            request.FirstName!, request.LastName!, request.Email!, PasswordHasher.Hash(request.Password!));
         if (user is null)
         {
             return Conflict(new { errors = new[] { "An account with this email already exists." } });
@@ -62,7 +71,7 @@ public class AuthController : ControllerBase
 
         var user = await _users.FindByEmailAsync(request.Email);
         var passwordOk = PasswordHasher.Verify(request.Password, user?.PasswordHash ?? DummyHash);
-        if (user is null || !passwordOk)
+        if (user is null || !passwordOk || !user.IsActive)
         {
             return Unauthorized(new { errors = new[] { InvalidCredentials } });
         }
@@ -71,10 +80,12 @@ public class AuthController : ControllerBase
         return Ok(ToResponse(user));
     }
 
+    /// <summary>Revokes the server-side session and clears the cookie.</summary>
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
+        await _sessions.RevokeAsync(User.FindFirstValue(SessionClaim));
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return NoContent();
     }
@@ -95,9 +106,8 @@ public class AuthController : ControllerBase
 
         var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var user = Guid.TryParse(id, out var guid) ? await _users.FindByIdAsync(guid) : null;
-        if (user is null)
+        if (user is null || !user.IsActive)
         {
-            // Cookie refers to a user that no longer exists — clear it.
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return NoContent();
         }
@@ -105,20 +115,23 @@ public class AuthController : ControllerBase
         return Ok(ToResponse(user));
     }
 
-    private Task SignInAsync(UserRecord user)
+    private async Task SignInAsync(User user)
     {
+        var sessionToken = await _sessions.CreateAsync(user.Id);
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Name, user.DisplayName),
             new Claim(ClaimTypes.Email, user.Email),
+            new Claim(SessionClaim, sessionToken),
         };
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
-        return HttpContext.SignInAsync(
+        await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             principal,
             new AuthenticationProperties { IsPersistent = true });
     }
 
-    private static UserResponse ToResponse(UserRecord user) => new(user.Id, user.Name, user.Email);
+    private static UserResponse ToResponse(User user) =>
+        new(user.Id, user.FirstName, user.LastName, user.DisplayName, user.Email);
 }

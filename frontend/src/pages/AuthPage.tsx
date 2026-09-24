@@ -18,7 +18,7 @@ const passwordRules = [
   { label: "Contains a letter and a number", test: (p: string) => /[a-zA-Z]/.test(p) && /\d/.test(p) },
 ];
 
-type Errors = Partial<Record<"name" | "email" | "password" | "confirm", string>>;
+type Errors = Partial<Record<"firstName" | "lastName" | "email" | "password" | "confirm", string>>;
 
 export function AuthPage({ mode }: AuthPageProps) {
   const { user, loading, login, register } = useAuth();
@@ -26,7 +26,8 @@ export function AuthPage({ mode }: AuthPageProps) {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -49,7 +50,8 @@ export function AuthPage({ mode }: AuthPageProps) {
 
   function validate(): Errors {
     const e: Errors = {};
-    if (isSignup && !name.trim()) e.name = "Please enter your name.";
+    if (isSignup && !firstName.trim()) e.firstName = "Please enter your first name.";
+    if (isSignup && !lastName.trim()) e.lastName = "Please enter your last name.";
     if (!EMAIL_PATTERN.test(email.trim())) e.email = "Please enter a valid email address.";
     if (!password) e.password = "Please enter your password.";
     else if (isSignup && !passwordRules.every((r) => r.test(password)))
@@ -67,7 +69,7 @@ export function AuthPage({ mode }: AuthPageProps) {
 
     setSubmitting(true);
     try {
-      if (isSignup) await register(name.trim(), email.trim(), password);
+      if (isSignup) await register(firstName.trim(), lastName.trim(), email.trim(), password);
       else await login(email.trim(), password);
       navigate(from, { replace: true });
     } catch (err) {
@@ -114,18 +116,38 @@ export function AuthPage({ mode }: AuthPageProps) {
         <h1 id="auth-title">{isSignup ? "Create your account" : "Welcome back"}</h1>
         <p className="auth-sub">
           {isSignup
-            ? "It takes less than a minute. We only need a name, email and password."
+            ? "It takes less than a minute. We only need your name, email and a password."
             : "Log in with the email and password you signed up with."}
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           {isSignup && (
-            <AuthField
-              id="name"
-              label="Name"
-              error={errors.name}
-              input={{ type: "text", autoComplete: "name", value: name, onChange: edit("name", setName), maxLength: 80 }}
-            />
+            <div className="auth-name-row">
+              <AuthField
+                id="firstName"
+                label="First name"
+                error={errors.firstName}
+                input={{
+                  type: "text",
+                  autoComplete: "given-name",
+                  value: firstName,
+                  onChange: edit("firstName", setFirstName),
+                  maxLength: 80,
+                }}
+              />
+              <AuthField
+                id="lastName"
+                label="Last name"
+                error={errors.lastName}
+                input={{
+                  type: "text",
+                  autoComplete: "family-name",
+                  value: lastName,
+                  onChange: edit("lastName", setLastName),
+                  maxLength: 80,
+                }}
+              />
+            </div>
           )}
 
           <AuthField

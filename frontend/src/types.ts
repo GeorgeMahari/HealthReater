@@ -87,6 +87,10 @@ export interface FourStates {
 }
 
 export interface HealthRatingResult {
+  /** Present when the result was saved to the signed-in user's history. */
+  id?: string;
+  /** UTC ISO timestamp of a saved assessment. */
+  completedAt?: string;
   totalHealthRating: number;
   maxHealthRating: number;
   percentage: number;

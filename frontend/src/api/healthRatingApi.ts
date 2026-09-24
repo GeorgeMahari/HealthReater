@@ -10,11 +10,22 @@ export class HealthRatingApiError extends Error {
   }
 }
 
-export async function calculateHealthRating(
-  input: AssessmentInput
-): Promise<HealthRatingResult> {
-  const response = await fetch(`${API_BASE_URL}/api/health-rating/calculate`, {
+export function calculateHealthRating(input: AssessmentInput): Promise<HealthRatingResult> {
+  return postAssessment("/api/health-rating/calculate", input);
+}
+
+/**
+ * Signed-in users: scores the assessment AND stores it in their history. The response is
+ * the saved snapshot, a superset of HealthRatingResult (adds id, completedAt, …).
+ */
+export function saveAssessment(input: AssessmentInput): Promise<HealthRatingResult> {
+  return postAssessment("/api/assessments", input);
+}
+
+async function postAssessment(path: string, input: AssessmentInput): Promise<HealthRatingResult> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });

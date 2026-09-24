@@ -4,6 +4,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5080
 
 export interface User {
   id: string;
+  firstName: string;
+  lastName: string;
+  /** "First Last", for display. */
   name: string;
   email: string;
 }
@@ -49,7 +52,7 @@ export const authApi = {
   /** Resolves to null when nobody is signed in (API answers 204). */
   me: async () => (await request<User | undefined>("me")) ?? null,
   login: (email: string, password: string) => request<User>("login", { email, password }),
-  register: (name: string, email: string, password: string) =>
-    request<User>("register", { name, email, password }),
+  register: (firstName: string, lastName: string, email: string, password: string) =>
+    request<User>("register", { firstName, lastName, email, password }),
   logout: () => request<void>("logout", {}),
 };
