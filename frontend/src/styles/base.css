@@ -152,6 +152,38 @@ a {
   background: var(--color-primary-soft);
 }
 
+/* ---------- Footer disclaimer ---------- */
+.app > footer {
+  position: relative;
+  z-index: 1;
+}
+
+.site-footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 28px 28px;
+}
+
+.disclaimer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.disclaimer-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-success);
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
@@ -364,6 +396,14 @@ a {
 
   .brand-tag {
     display: none;
+  }
+
+  .site-footer {
+    padding: 0 18px 22px;
+  }
+
+  .disclaimer {
+    justify-content: flex-start;
   }
 }
 

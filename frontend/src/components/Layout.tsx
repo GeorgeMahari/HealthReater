@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { HealthBackground, type BackgroundIntensity } from "./visual/HealthBackground";
 
@@ -75,6 +75,16 @@ export function Layout() {
       <main className="page-transition" key={location.pathname}>
         <Outlet />
       </main>
+
+      <footer className="site-footer">
+        <p className="disclaimer">
+          <ShieldCheck className="disclaimer-icon" size={16} strokeWidth={2} aria-hidden="true" />
+          <span>
+            HealthRater is for reflection and education, not diagnosis or medical advice. If something
+            concerns you, speak with a qualified health professional.
+          </span>
+        </p>
+      </footer>
     </div>
   );
 }
