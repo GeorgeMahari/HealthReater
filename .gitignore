@@ -2,16 +2,42 @@
 bin/
 obj/
 *.user
+*.suo
+.vs/
+TestResults/
 
 # Node
 node_modules/
 dist/
+build/
+*.log
+npm-debug.log*
 
 # Python
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+venv/
+
+# Environment & secrets — never commit these
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+secrets.json
+appsettings.*.local.json
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
 
 # OS
 .DS_Store
+Thumbs.db
