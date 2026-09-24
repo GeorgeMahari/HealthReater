@@ -51,6 +51,7 @@ export function FieldInput({ field, value, onChange, error }: FieldInputProps) {
         <div className="field-control">
           <input
             id={field.key}
+            className="input"
             type="number"
             inputMode="decimal"
             value={value === "" || value === undefined ? "" : (value as number)}

@@ -525,7 +525,7 @@
   position: relative;
 }
 
-.field input[type="number"] {
+.field .input {
   width: 100%;
   height: 46px;
   padding: 0 42px 0 14px;
@@ -544,22 +544,22 @@
     background var(--dur-fast);
 }
 
-.field input[type="number"]::-webkit-outer-spin-button,
-.field input[type="number"]::-webkit-inner-spin-button {
+.field .input::-webkit-outer-spin-button,
+.field .input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.field input[type="number"]::placeholder {
+.field .input::placeholder {
   color: var(--color-text-faint);
   opacity: 0.8;
 }
 
-.field input[type="number"]:hover {
+.field .input:hover {
   border-color: var(--color-border-hover);
 }
 
-.field input[type="number"]:focus {
+.field .input:focus {
   outline: none;
   background: #fff;
   border-color: var(--c-teal);
@@ -591,18 +591,18 @@
   transform: scale(1);
 }
 
-.field-valid input[type="number"]:not(:focus),
+.field-valid .input:not(:focus),
 .field-valid .select-trigger {
   border-color: rgba(29, 127, 92, 0.4);
 }
 
-.field-error input[type="number"],
+.field-error .input,
 .field-error .select-trigger {
   border-color: var(--color-danger);
   box-shadow: 0 0 0 3px rgba(176, 64, 42, 0.1);
 }
 
-.field-error input[type="number"]:focus {
+.field-error .input:focus {
   box-shadow: 0 0 0 4px rgba(176, 64, 42, 0.16);
 }
 

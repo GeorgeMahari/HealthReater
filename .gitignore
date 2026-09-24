@@ -5,6 +5,8 @@ obj/
 *.suo
 .vs/
 TestResults/
+# Local user store (contains password hashes)
+App_Data/
 
 # Node
 node_modules/

@@ -18,5 +18,8 @@ all.AddRange(EngineTests.All());
 Console.WriteLine("-- Validation --");
 all.AddRange(ValidationTests.All());
 
+Console.WriteLine("-- Auth (password hashing / validation / user store) --");
+all.AddRange(AuthTests.All());
+
 var failed = TestRunner.Run(all);
 Environment.Exit(failed == 0 ? 0 : 1);

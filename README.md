@@ -168,6 +168,33 @@ Returns:
 Invalid input (e.g. age out of 18–100, systolic ≤ diastolic) returns `400` with an
 `errors` array/object.
 
+## Authentication (Log in / Sign up)
+
+Optional accounts — the assessment stays open to everyone; signing in only adds the
+user to the top bar. Frontend pages: `/login` and `/signup` (`src/pages/AuthPage.tsx`).
+
+| Endpoint | Body | Result |
+|---|---|---|
+| `POST /api/auth/register` | `{ name, email, password }` | `201` + user, signs in · `400` validation · `409` email taken |
+| `POST /api/auth/login` | `{ email, password }` | `200` + user, signs in · `401` "Invalid email or password." |
+| `POST /api/auth/logout` | — | `204`, clears the session cookie |
+| `GET /api/auth/me` | — | `200` + user, or `204` when nobody is signed in |
+
+- **Passwords**: PBKDF2-HMAC-SHA512, 210,000 iterations, random 16-byte salt per user
+  (`HealthRater.Core/Auth/PasswordHasher.cs`). Plaintext is never stored or logged.
+  Rules: 8–128 characters, at least one letter and one number.
+- **Session**: `healthrater.auth` cookie — `HttpOnly`, `SameSite=Lax`, 7-day sliding
+  expiry. The frontend calls the API with `credentials: "include"`; CORS allows
+  credentials for `localhost:5173` only.
+- **Brute-force protection**: register/login are rate-limited to 10 requests per
+  minute per IP (`429` afterwards). Failed logins return the same message and take
+  the same time whether or not the email exists.
+- **Storage**: `backend/HealthRater.Api/App_Data/users.json` (override with
+  `Auth:UserStorePath`). The folder is git-ignored because it holds password hashes.
+  It's a single-instance file store behind `IUserStore` — replace it with a
+  database-backed implementation for production.
+- In production, serve the API over HTTPS so the cookie is only sent encrypted.
+
 ## Validation
 
 Enforced in `AssessmentValidator` (C#) / `validation.py` (Python):
@@ -215,7 +242,8 @@ PyPI — but **not** `api.nuget.org`. That means:
 - The functional-power and age-scoring norm tables are intentionally simple
   piecewise tables, not full percentile curves — easy to swap for a richer table in
   `ScoringConfig`/`config.py` without touching any other file.
-- No authentication/authorization layer (not requested).
+- Accounts are stored in a local JSON file (single API instance); there's no
+  password reset, email verification or per-user result history yet.
 - `demo.html` is a convenience preview only — it duplicates the scoring formulas in
   vanilla JS so it can run standalone in the chat artifact viewer with no backend.
   The source of truth for scoring is `HealthRater.Core` (C#) and `healthrater/scoring`

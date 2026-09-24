@@ -3,19 +3,25 @@ import { Layout } from "./components/Layout";
 import { HomePage } from "./pages/HomePage";
 import { AssessmentPage } from "./pages/AssessmentPage";
 import { ResultsPage } from "./pages/ResultsPage";
+import { AuthPage } from "./pages/AuthPage";
 import { AssessmentProvider } from "./context/AssessmentContext";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <AssessmentProvider>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/assessment" element={<AssessmentPage />} />
-          <Route path="/results" element={<ResultsPage />} />
-        </Route>
-      </Routes>
-    </AssessmentProvider>
+    <AuthProvider>
+      <AssessmentProvider>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/assessment" element={<AssessmentPage />} />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route path="/login" element={<AuthPage mode="login" />} />
+            <Route path="/signup" element={<AuthPage mode="signup" />} />
+          </Route>
+        </Routes>
+      </AssessmentProvider>
+    </AuthProvider>
   );
 }
 

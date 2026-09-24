@@ -33,7 +33,7 @@ export async function calculateHealthRating(
 // ASP.NET's built-in [ApiController] validation returns errors as
 // { errors: { FieldName: ["msg1", "msg2"] } } while our own AssessmentValidator
 // returns { errors: ["msg1", "msg2"] }. Normalize both shapes to a flat string list.
-function flattenErrors(errors: unknown): string[] {
+export function flattenErrors(errors: unknown): string[] {
   if (Array.isArray(errors)) {
     return errors.every((e) => typeof e === "string")
       ? (errors as string[])
