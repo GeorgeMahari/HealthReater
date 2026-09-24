@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Design tokens — the single source for colour, depth, shape and motion.
+   ========================================================================== */
+:root {
+  /* Brand palette */
+  --c-navy-deep: #0d1f33;
+  --c-navy: #14304a;
+  --c-emerald-deep: #145c4b;
+  --c-emerald: #1f7a64;
+  --c-teal: #2a9d8f;
+  --c-mint: #bfe8d9;
+  --c-warm: #f6f4ef;
+
+  /* Semantic colours */
+  --color-bg: var(--c-warm);
+  --color-surface: rgba(255, 255, 255, 0.78);
+  --color-surface-strong: rgba(255, 255, 255, 0.92);
+  --color-surface-solid: #ffffff;
+  --color-primary: #16624f;
+  --color-primary-strong: var(--c-navy);
+  --color-primary-soft: #dcefe8;
+  --color-text: #132a33;
+  --color-text-muted: #4a5f66;
+  --color-text-faint: #7b8c91;
+  --color-border: rgba(19, 42, 51, 0.1);
+  --color-border-strong: rgba(19, 42, 51, 0.18);
+  --color-border-hover: rgba(19, 42, 51, 0.32);
+  --color-focus: rgba(42, 157, 143, 0.18);
+  --color-success: #1d7f5c;
+  --color-success-soft: #dcf1e7;
+  --color-warning: #9a6c12;
+  --color-danger: #b0402a;
+  --color-danger-soft: #f8e4dd;
+
+  /* Depth */
+  --shadow-soft: 0 1px 2px rgba(13, 31, 51, 0.04), 0 10px 30px -12px rgba(13, 31, 51, 0.12);
+  --shadow-lift: 0 2px 6px rgba(13, 31, 51, 0.05), 0 22px 44px -16px rgba(13, 31, 51, 0.22);
+  --shadow-glow: 0 30px 70px -30px rgba(31, 122, 100, 0.4);
+  --blur-surface: blur(14px) saturate(140%);
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-card: 20px;
+  --radius-pill: 999px;
+
+  /* Spacing & type */
+  --spacing-section: 80px;
+  --font-body: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 160ms;
+  --dur: 260ms;
+}
+
+/* Per-state visual identity (Four Health States). */
+.tone-energy {
+  --tone: #1d7f5c;
+  --tone-soft: #dcf1e7;
+  --tone-border: rgba(29, 127, 92, 0.35);
+}
+.tone-mental {
+  --tone: #4658a0;
+  --tone-soft: #e4e8f6;
+  --tone-border: rgba(70, 88, 160, 0.35);
+}
+.tone-immunity {
+  --tone: #17788a;
+  --tone-soft: #dbeef2;
+  --tone-border: rgba(23, 120, 138, 0.35);
+}
+.tone-longevity {
+  --tone: #8a6224;
+  --tone-soft: #f3ead9;
+  --tone-border: rgba(138, 98, 36, 0.35);
+}
+
+/* Score quality tones for 1–10 parameter scores. */
+.tone-good {
+  --tone-c: var(--color-success);
+}
+.tone-mid {
+  --tone-c: var(--color-warning);
+}
+.tone-low {
+  --tone-c: var(--color-danger);
+}
+
+@media (max-width: 720px) {
+  :root {
+    --spacing-section: 56px;
+  }
+}

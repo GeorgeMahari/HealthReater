@@ -1,0 +1,289 @@
+/* ==========================================================================
+   HealthBackground — "living health data environment"
+   Everything animates with transform/opacity only. --k scales the overall
+   intensity per page; --px/--py/--cx/--cy are written by the pointer handler.
+   ========================================================================== */
+.hb {
+  --k: 1;
+  --px: 0;
+  --py: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #fbfaf6 0%, rgba(251, 250, 246, 0) 60%),
+    var(--color-bg);
+  animation: fade-in 900ms var(--ease) backwards;
+}
+
+.hb[data-intensity="rich"] {
+  --k: 0.85;
+}
+
+.hb[data-intensity="calm"] {
+  --k: 0.62;
+}
+
+/* Layer 2: health orbs */
+.hb-orbs {
+  position: absolute;
+  inset: -12%;
+  opacity: var(--k);
+  transform: translate3d(calc(var(--px) * -26px), calc(var(--py) * -18px), 0);
+  transition:
+    opacity 1.2s var(--ease),
+    transform 1.4s var(--ease);
+}
+
+.hb-orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+
+.hb-orb-navy {
+  width: 64vmax;
+  height: 64vmax;
+  top: -24%;
+  left: -18%;
+  background: radial-gradient(circle, rgba(20, 48, 74, 0.2) 0%, rgba(20, 48, 74, 0.06) 40%, transparent 66%);
+  animation: orb-drift-x 28s ease-in-out infinite alternate;
+}
+
+.hb-orb-emerald {
+  width: 58vmax;
+  height: 58vmax;
+  bottom: -30%;
+  right: -14%;
+  background: radial-gradient(circle, rgba(31, 122, 100, 0.22) 0%, rgba(31, 122, 100, 0.07) 42%, transparent 66%);
+  animation: orb-breathe 22s ease-in-out infinite alternate;
+}
+
+.hb-orb-mint {
+  width: 44vmax;
+  height: 44vmax;
+  top: 8%;
+  right: 6%;
+  background: radial-gradient(circle, rgba(170, 225, 204, 0.55) 0%, rgba(170, 225, 204, 0.16) 45%, transparent 68%);
+  animation: orb-glow 18s ease-in-out infinite alternate;
+}
+
+.hb-orb-teal {
+  width: 36vmax;
+  height: 36vmax;
+  bottom: 4%;
+  left: 18%;
+  background: radial-gradient(circle, rgba(42, 157, 143, 0.14) 0%, transparent 65%);
+  animation: orb-drift-y 30s ease-in-out infinite alternate;
+}
+
+@keyframes orb-drift-x {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(14vw, 4vh, 0);
+  }
+}
+
+@keyframes orb-drift-y {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6vw, -10vh, 0) scale(1.1);
+  }
+}
+
+@keyframes orb-breathe {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.18) translate3d(-3vw, -2vh, 0);
+  }
+}
+
+@keyframes orb-glow {
+  from {
+    opacity: 0.45;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(-4vw, 3vh, 0);
+  }
+}
+
+/* Layer 3: measurement grid — fine dots plus a sparse line lattice */
+.hb-grid {
+  position: absolute;
+  inset: 0;
+  opacity: calc(0.75 * var(--k));
+  background-image:
+    radial-gradient(rgba(19, 42, 51, 0.13) 1px, transparent 1.3px),
+    linear-gradient(rgba(19, 42, 51, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 42, 51, 0.035) 1px, transparent 1px);
+  background-size:
+    28px 28px,
+    168px 168px,
+    168px 168px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 25%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 25%, transparent 80%);
+  transition: opacity 1.2s var(--ease);
+}
+
+/* Layer 5: biometric signal lines */
+.hb-signals {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: calc(0.6 * var(--k));
+  transform: translate3d(calc(var(--px) * 10px), calc(var(--py) * 8px), 0);
+  transition:
+    opacity 1.2s var(--ease),
+    transform 1.6s var(--ease);
+}
+
+.hb-signal path {
+  fill: none;
+  stroke: url(#hb-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hb-signal-base {
+  stroke-width: 1;
+  opacity: 0.35;
+}
+
+.hb-signal-flow {
+  stroke-width: 1.6;
+  stroke-dasharray: 0.14 0.86;
+  animation: signal-flow 16s linear infinite;
+}
+
+.hb-signal-1 .hb-signal-flow {
+  animation-duration: 24s;
+  animation-delay: -8s;
+}
+
+.hb-signal-2 .hb-signal-flow {
+  animation-duration: 30s;
+  animation-delay: -17s;
+}
+
+@keyframes signal-flow {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Layer 4: floating data points */
+.hb-particles {
+  position: absolute;
+  inset: 0;
+  opacity: var(--k);
+  transform: translate3d(calc(var(--px) * 18px), calc(var(--py) * 14px), 0);
+  transition:
+    opacity 1.2s var(--ease),
+    transform 1.8s var(--ease);
+}
+
+.hb-particle {
+  position: absolute;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: rgba(31, 122, 100, 0.5);
+  box-shadow: 0 0 10px 1px rgba(42, 157, 143, 0.35);
+  animation: particle-float var(--d) ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.hb-particle:nth-child(3n) {
+  background: rgba(20, 48, 74, 0.4);
+  box-shadow: 0 0 8px rgba(20, 48, 74, 0.2);
+}
+
+@keyframes particle-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate3d(18px, -26px, 0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-10px, -52px, 0);
+    opacity: 0.35;
+  }
+}
+
+/* Soft glow that trails the pointer (fine pointers only; set from JS). */
+.hb-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 560px;
+  height: 560px;
+  margin: -280px 0 0 -280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(42, 157, 143, 0.09) 0%, rgba(42, 157, 143, 0.03) 35%, transparent 62%);
+  opacity: 0;
+  transform: translate3d(var(--cx, 50vw), var(--cy, 30vh), 0);
+  transition:
+    opacity 800ms var(--ease),
+    transform 500ms var(--ease);
+}
+
+.hb[data-pointer="on"] .hb-cursor {
+  opacity: var(--k);
+}
+
+.hb-vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(246, 244, 239, 0) 55%, rgba(246, 244, 239, 0.65) 100%);
+}
+
+/* Tablet: lighter touch */
+@media (max-width: 1024px) {
+  .hb-particle:nth-child(n + 8) {
+    display: none;
+  }
+
+  .hb-signals {
+    opacity: calc(0.45 * var(--k));
+  }
+}
+
+/* Mobile: passive gradients + texture only */
+@media (max-width: 720px) {
+  .hb-particle:nth-child(n + 5),
+  .hb-signal-2,
+  .hb-cursor {
+    display: none;
+  }
+
+  .hb-orbs,
+  .hb-signals,
+  .hb-particles {
+    transform: none;
+  }
+
+  .hb-grid {
+    background-size:
+      24px 24px,
+      0 0,
+      0 0;
+  }
+}
