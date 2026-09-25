@@ -1281,9 +1281,8 @@
 }
 
 /* ---------- Responsive ---------- */
-/* Narrow phones: "History" lives in the account menu, so the top bar keeps only the essentials. */
+/* Narrow phones: keep the top bar to the essentials. */
 @media (max-width: 520px) {
-  .nav-history,
   .user-menu-chevron {
     display: none;
   }

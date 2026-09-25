@@ -49,16 +49,7 @@ export function Layout() {
             </Link>
 
             {!loading && user && (
-              <>
-                <Link
-                  to="/profile#history"
-                  className={`nav-link nav-history ${location.pathname.startsWith("/profile") || location.pathname.startsWith("/history") ? "active" : ""}`}
-                  aria-current={location.pathname.startsWith("/profile") ? "page" : undefined}
-                >
-                  History
-                </Link>
-                <UserMenu user={user} onLogout={handleLogout} />
-              </>
+              <UserMenu user={user} onLogout={handleLogout} />
             )}
 
             {!loading && !user && !onAuthPage && (

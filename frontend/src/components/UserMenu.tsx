@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, ChevronDown, LogOut, Settings, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import type { User } from "../api/authApi";
 import { Avatar } from "./Avatar";
 
@@ -63,14 +63,6 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           <Link to="/profile" className="user-menu-item" onClick={close}>
             <UserRound size={16} strokeWidth={1.9} aria-hidden="true" />
             Profile
-          </Link>
-          <Link to="/profile#history" className="user-menu-item" onClick={close}>
-            <CalendarDays size={16} strokeWidth={1.9} aria-hidden="true" />
-            Health History
-          </Link>
-          <Link to="/profile#settings" className="user-menu-item" onClick={close}>
-            <Settings size={16} strokeWidth={1.9} aria-hidden="true" />
-            Account Settings
           </Link>
           <hr />
           <button
