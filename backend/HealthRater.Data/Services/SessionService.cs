@@ -68,6 +68,15 @@ public class SessionService
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTime.UtcNow));
     }
 
+    /// <summary>Revokes every active session of the user except the one identified by <paramref name="keepRawToken"/>.</summary>
+    public Task RevokeAllExceptAsync(Guid userId, string? keepRawToken)
+    {
+        var keepHash = string.IsNullOrEmpty(keepRawToken) ? "" : Hash(keepRawToken);
+        return _db.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null && t.TokenHash != keepHash)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTime.UtcNow));
+    }
+
     public static string Hash(string rawToken) =>
         Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
 

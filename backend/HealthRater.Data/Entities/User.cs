@@ -17,8 +17,11 @@ public class User
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
 
-    /// <summary>Optional; relative path or absolute URL. Not collected yet.</summary>
-    public string? AvatarUrl { get; set; }
+    /// <summary>
+    /// When the avatar was last changed; null when the user has none. The image itself is
+    /// in <see cref="Avatar"/> (separate table). Also used to version the avatar URL.
+    /// </summary>
+    public DateTime? AvatarUpdatedAt { get; set; }
 
     /// <summary>Optional; not collected yet. Assessments snapshot age separately.</summary>
     public DateOnly? DateOfBirth { get; set; }
@@ -27,6 +30,7 @@ public class User
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
+    public UserAvatar? Avatar { get; set; }
     public List<RefreshToken> RefreshTokens { get; set; } = new();
     public List<HealthAssessment> HealthAssessments { get; set; } = new();
 

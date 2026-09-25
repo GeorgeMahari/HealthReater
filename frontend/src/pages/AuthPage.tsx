@@ -24,7 +24,8 @@ export function AuthPage({ mode }: AuthPageProps) {
   const { user, loading, login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from ?? "/";
+  const navState = location.state as { from?: string; expired?: boolean } | null;
+  const from = navState?.from ?? "/";
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -112,6 +113,12 @@ export function AuthPage({ mode }: AuthPageProps) {
           </Link>
           <span className="auth-tab-indicator" data-side={isSignup ? "right" : "left"} aria-hidden="true" />
         </nav>
+
+        {navState?.expired && !isSignup && (
+          <p className="auth-expired" role="status">
+            Your session has expired. Please log in again to continue.
+          </p>
+        )}
 
         <h1 id="auth-title">{isSignup ? "Create your account" : "Welcome back"}</h1>
         <p className="auth-sub">

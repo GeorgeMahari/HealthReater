@@ -27,6 +27,19 @@ public static class AuthValidator
         return outcome;
     }
 
+    /// <summary>Profile edits: same name/email rules as registration, no password.</summary>
+    public static ValidationOutcome ValidateProfile(string? firstName, string? lastName, string? email)
+    {
+        var outcome = new ValidationOutcome();
+        ValidateName(firstName, "First name", outcome);
+        ValidateName(lastName, "Last name", outcome);
+        if (!IsValidEmail(email))
+        {
+            outcome.Errors.Add("Please enter a valid email address.");
+        }
+        return outcome;
+    }
+
     private static void ValidateName(string? value, string label, ValidationOutcome outcome)
     {
         var trimmed = value?.Trim() ?? "";

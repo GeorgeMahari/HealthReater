@@ -24,5 +24,8 @@ all.AddRange(AuthTests.All());
 Console.WriteLine("-- Persistence (assessments / history / data isolation) --");
 all.AddRange(PersistenceTests.All());
 
+Console.WriteLine("-- Profile (edit / avatar / password / account deletion) --");
+all.AddRange(ProfileTests.All());
+
 var failed = TestRunner.Run(all);
 Environment.Exit(failed == 0 ? 0 : 1);

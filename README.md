@@ -38,7 +38,9 @@ healthrater/
 │
 ├── frontend/                    React + Vite + TypeScript
 │   └── src/
-│       ├── pages/                HomePage, AssessmentPage, ResultsPage
+│       ├── pages/                HomePage, AssessmentPage, ResultsPage, AuthPage,
+│       │                         ProfilePage (/profile), HistoricalResultPage (/history/:id)
+│       ├── components/profile/   calendar, score-history charts, history list, comparison, dialogs
 │       ├── components/           Layout, FieldInput, Tooltip, ProgressBar, ScoreCard
 │       ├── data/sections.ts      the 8 assessment sections & field metadata (single source of truth)
 │       ├── context/               AssessmentContext (in-progress answers + last result)
@@ -229,6 +231,41 @@ creation. Reading an assessment never re-runs the engine, so changing
 **Time.** Timestamps are stored in UTC and returned with a `Z` suffix; the frontend
 formats them in the viewer's own time zone.
 
+## Profile & health history (frontend)
+
+`/profile` (signed-in only; guests are sent to log in and brought back afterwards):
+
+- **Profile card** — avatar, name, email, "Member since", edit profile.
+- **Calendar** — completed assessments per day in the viewer's time zone. Green means
+  *an assessment was completed that day*, not a health judgement. Several scans on
+  one day show as dots; clicking a day lists each scan with its total and four states.
+- **Health History** — score-history chart (Total Health Rating, plus one small chart
+  per health state), the full list of assessments, and a two-assessment comparison
+  showing recorded differences without labelling them good or bad.
+- **Account Settings** — edit profile, profile photo, change password, log out,
+  delete account (requires typing DELETE and the password).
+- `/history/:id` reuses the Results design to show a saved assessment exactly as it was
+  stored ("Assessment from 25 September 2026"); nothing is recalculated.
+
+All data comes from the API below; the frontend never sends a user id.
+
+### Profile API (`[Authorize]`, always the signed-in user)
+
+| Endpoint | Result |
+|---|---|
+| `PUT /api/profile` | `{ firstName, lastName, email }` — validated, email normalized; `409` if taken |
+| `PUT /api/profile/password` | `{ currentPassword, newPassword }` — requires the current password; signs out other devices |
+| `POST /api/profile/avatar` | multipart field `file`; JPG/PNG/WEBP detected **from the bytes**, ≤ 2 MB, 32–4096 px |
+| `GET /api/profile/avatar` | the user's own image (`nosniff`, private cache); `404` if none |
+| `DELETE /api/profile/avatar` | removes the photo |
+| `DELETE /api/profile` | `{ password }` — permanently deletes the account and all its assessments |
+
+`GET /api/auth/me` also returns `createdAt` and `avatarUrl` (an API-relative, versioned URL).
+Avatars are stored in the `UserAvatars` table (not on disk), so no filesystem path is
+ever exposed and they are deleted with the account. The browser centre-crops and
+re-encodes the chosen image to 320×320 before upload, which also strips photo
+metadata such as GPS location; the server validates it again independently.
+
 ## Database
 
 EF Core 8 with two supported providers. Each has its own `DbContext` subclass and
@@ -247,7 +284,7 @@ Any setting can come from an environment variable (`__` instead of `:`), e.g.
 `Database__Provider=SqlServer` and `ConnectionStrings__SqlServer=...`, or from
 `dotnet user-secrets` in `HealthRater.Api`.
 
-**Tables:** `Users` (unique email) → `RefreshTokens` (unique token hash) and
+**Tables:** `Users` (unique email) → `UserAvatars` (one per user), `RefreshTokens` (unique token hash) and
 `HealthAssessments` (indexed by user, completion date, and user+status+date) →
 `AssessmentParameterScores` (unique per assessment + key, check constraint
 `Score BETWEEN 1 AND 10`). Deleting a user or an assessment cascades to its children.
@@ -299,8 +336,8 @@ The project was started in a sandbox without NuGet access, so `HealthRater.Tests
 small dependency-free console runner (`Framework/TestRunner.cs`, xUnit-like `Assert.*`)
 and the API has no Swagger UI. NuGet is now enabled in `backend/NuGet.Config` (EF Core
 comes from it), so moving to xUnit/Swagger is possible whenever wanted. The suite has
-56 tests, including persistence tests that apply the real SQLite migrations to a
-private database per test.
+62 tests, including persistence and profile tests that apply the real SQLite
+migrations to a private database per test.
 
 ## What's been executed (not just written)
 
@@ -326,8 +363,8 @@ private database per test.
 - The functional-power and age-scoring norm tables are intentionally simple
   piecewise tables, not full percentile curves — easy to swap for a richer table in
   `ScoringConfig`/`config.py` without touching any other file.
-- No password reset or email verification yet, and no history/calendar UI yet — the
-  API for it exists (`/api/assessments`, `/api/assessments/calendar`).
+- No password reset or email verification yet; changing the email doesn't require
+  re-verification.
 - `demo.html` is a convenience preview only — it duplicates the scoring formulas in
   vanilla JS so it can run standalone in the chat artifact viewer with no backend.
   The source of truth for scoring is `HealthRater.Core` (C#) and `healthrater/scoring`

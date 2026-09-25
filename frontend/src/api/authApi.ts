@@ -9,6 +9,10 @@ export interface User {
   /** "First Last", for display. */
   name: string;
   email: string;
+  /** UTC ISO timestamp. */
+  createdAt: string;
+  /** API-relative, versioned URL of the user's own avatar, or null. */
+  avatarUrl: string | null;
 }
 
 export class AuthApiError extends Error {

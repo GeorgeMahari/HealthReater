@@ -19,6 +19,7 @@ public abstract class HealthRaterDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<UserAvatar> UserAvatars => Set<UserAvatar>();
     public DbSet<HealthAssessment> HealthAssessments => Set<HealthAssessment>();
     public DbSet<AssessmentParameterScore> AssessmentParameterScores => Set<AssessmentParameterScore>();
 
@@ -32,8 +33,12 @@ public abstract class HealthRaterDbContext : DbContext
             user.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired();
             user.Property(u => u.FirstName).HasMaxLength(80).IsRequired();
             user.Property(u => u.LastName).HasMaxLength(80).IsRequired();
-            user.Property(u => u.AvatarUrl).HasMaxLength(500);
             user.Ignore(u => u.DisplayName);
+
+            user.HasOne(u => u.Avatar)
+                .WithOne(a => a.User)
+                .HasForeignKey<UserAvatar>(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             user.HasMany(u => u.RefreshTokens)
                 .WithOne(t => t.User)
@@ -44,6 +49,13 @@ public abstract class HealthRaterDbContext : DbContext
                 .WithOne(a => a.User)
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserAvatar>(avatar =>
+        {
+            avatar.HasKey(a => a.UserId);
+            avatar.Property(a => a.ContentType).HasMaxLength(20).IsRequired();
+            avatar.Property(a => a.Data).IsRequired();
         });
 
         modelBuilder.Entity<RefreshToken>(token =>

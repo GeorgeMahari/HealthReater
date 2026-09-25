@@ -67,6 +67,7 @@ else
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<AssessmentService>();
+builder.Services.AddScoped<ProfileService>();
 
 // ---------- Authentication ----------
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

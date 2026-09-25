@@ -132,6 +132,5 @@ public class AuthController : ControllerBase
             new AuthenticationProperties { IsPersistent = true });
     }
 
-    private static UserResponse ToResponse(User user) =>
-        new(user.Id, user.FirstName, user.LastName, user.DisplayName, user.Email);
+    private static UserResponse ToResponse(User user) => UserResponse.From(user);
 }

@@ -232,8 +232,7 @@ namespace HealthRater.Data.Migrations.Sqlite
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasMaxLength(500)
+                    b.Property<DateTime?>("AvatarUpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -274,6 +273,34 @@ namespace HealthRater.Data.Migrations.Sqlite
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("HealthRater.Data.Entities.UserAvatar", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserAvatars");
                 });
 
             modelBuilder.Entity("HealthRater.Data.Entities.AssessmentParameterScore", b =>
@@ -421,6 +448,17 @@ namespace HealthRater.Data.Migrations.Sqlite
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("HealthRater.Data.Entities.UserAvatar", b =>
+                {
+                    b.HasOne("HealthRater.Data.Entities.User", "User")
+                        .WithOne("Avatar")
+                        .HasForeignKey("HealthRater.Data.Entities.UserAvatar", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("HealthRater.Data.Entities.HealthAssessment", b =>
                 {
                     b.Navigation("ParameterScores");
@@ -428,6 +466,8 @@ namespace HealthRater.Data.Migrations.Sqlite
 
             modelBuilder.Entity("HealthRater.Data.Entities.User", b =>
                 {
+                    b.Navigation("Avatar");
+
                     b.Navigation("HealthAssessments");
 
                     b.Navigation("RefreshTokens");

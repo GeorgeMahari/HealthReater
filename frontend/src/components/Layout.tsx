@@ -1,13 +1,16 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { HealthBackground, type BackgroundIntensity } from "./visual/HealthBackground";
+import { UserMenu } from "./UserMenu";
 
 // The questionnaire gets a calmer backdrop so the form stays the focus.
 function intensityFor(pathname: string): BackgroundIntensity {
   if (pathname.startsWith("/assessment")) return "calm";
   if (pathname.startsWith("/results")) return "rich";
   if (pathname.startsWith("/login") || pathname.startsWith("/signup")) return "rich";
+  if (pathname.startsWith("/profile")) return "calm";
+  if (pathname.startsWith("/history")) return "rich";
   return "full";
 }
 
@@ -46,16 +49,16 @@ export function Layout() {
             </Link>
 
             {!loading && user && (
-              <div className="nav-user">
-                <span className="nav-avatar" aria-hidden="true">
-                  {initials(user.name)}
-                </span>
-                <span className="nav-user-name">{user.name}</span>
-                <button type="button" className="nav-link nav-logout" onClick={handleLogout}>
-                  <LogOut size={15} strokeWidth={2} aria-hidden="true" />
-                  Log out
-                </button>
-              </div>
+              <>
+                <Link
+                  to="/profile#history"
+                  className={`nav-link nav-history ${location.pathname.startsWith("/profile") || location.pathname.startsWith("/history") ? "active" : ""}`}
+                  aria-current={location.pathname.startsWith("/profile") ? "page" : undefined}
+                >
+                  History
+                </Link>
+                <UserMenu user={user} onLogout={handleLogout} />
+              </>
             )}
 
             {!loading && !user && !onAuthPage && (
@@ -87,10 +90,4 @@ export function Layout() {
       </footer>
     </div>
   );
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const letters = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ?? "?").slice(0, 2);
-  return letters.toUpperCase();
 }

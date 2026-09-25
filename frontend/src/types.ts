@@ -102,3 +102,70 @@ export interface HealthRatingResult {
 export interface ApiError {
   errors: string[];
 }
+
+/** Four-state normalized scores (0–100) as stored with a saved assessment. */
+export interface StateScores {
+  energyStrengthStamina: number;
+  mentalEmotional: number;
+  immunity: number;
+  longevity: number;
+}
+
+/** GET /api/assessments row. */
+export interface AssessmentSummary {
+  id: string;
+  completedAt: string;
+  totalHealthRating: number;
+  maxHealthRating: number;
+  percentage: number;
+  fourStates: StateScores;
+}
+
+/** GET /api/assessments/calendar row; `date` is the local day (yyyy-MM-dd) in the requested time zone. */
+export interface CalendarEntry extends StateScores {
+  date: string;
+  assessmentId: string;
+  completedAt: string;
+  totalHealthRating: number;
+}
+
+export interface AssessmentParameter {
+  key: string;
+  name: string;
+  order: number;
+  rawValue: number | null;
+  rawText: string | null;
+  normalizedValue: number | null;
+  unit: string | null;
+  score: number;
+}
+
+/** GET /api/assessments/{id}: the full stored snapshot (never recalculated). */
+export interface AssessmentDetail extends HealthRatingResult {
+  id: string;
+  status: string;
+  createdAt: string;
+  completedAt: string;
+  scoringVersion: string;
+  body: {
+    sex: string;
+    ageAtAssessment: number;
+    height: number;
+    heightUnit: string;
+    weight: number;
+    weightUnit: string;
+    waist: number;
+    waistUnit: string;
+    hip: number;
+    hipUnit: string;
+    bodyFatPercentage: number;
+  };
+  cardiovascular: {
+    restingHeartRate: number;
+    heartRateRecovery: number;
+    bloodPressureSystolic: number;
+    bloodPressureDiastolic: number;
+  };
+  parameters: AssessmentParameter[];
+  input: AssessmentInput;
+}

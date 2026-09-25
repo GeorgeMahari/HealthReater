@@ -57,8 +57,9 @@ a {
   isolation: isolate;
 }
 
-.app > main,
-.app > header {
+/* Content sits above the fixed background. The header keeps its own sticky
+   positioning and higher z-index from .topbar so menus open above the page. */
+.app > main {
   position: relative;
   z-index: 1;
 }
