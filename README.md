@@ -65,7 +65,13 @@ cd backend/HealthRater.Api
 dotnet run          # http://localhost:5080 (see Properties/launchSettings.json)
 ```
 In Development the SQLite database (`App_Data/healthrater.db`) is created and migrated
-automatically on startup — no setup needed. See [Database](#database) for SQL Server
+automatically on startup — no setup needed.
+
+**Swagger UI:** http://localhost:5080/swagger (Development only). Every endpoint is listed
+with its request/response schemas; locked ones need a session — run
+`POST /api/auth/register` or `/api/auth/login` from Swagger first, and the browser keeps
+the session cookie for the other calls. The raw OpenAPI document is at
+`/swagger/v1/swagger.json`. See [Database](#database) for SQL Server
 and production.
 
 `POST http://localhost:5080/api/health-rating/calculate` with an `AssessmentInput` JSON body
@@ -333,9 +339,9 @@ flat list of human-readable messages; the .NET API also auto-returns 400 for
 ## Test runner and NuGet
 
 The project was started in a sandbox without NuGet access, so `HealthRater.Tests` is a
-small dependency-free console runner (`Framework/TestRunner.cs`, xUnit-like `Assert.*`)
-and the API has no Swagger UI. NuGet is now enabled in `backend/NuGet.Config` (EF Core
-comes from it), so moving to xUnit/Swagger is possible whenever wanted. The suite has
+small dependency-free console runner (`Framework/TestRunner.cs`, xUnit-like `Assert.*`).
+NuGet is now enabled in `backend/NuGet.Config` (EF Core and Swashbuckle come from it), so
+moving the tests to xUnit is possible whenever wanted. The suite has
 62 tests, including persistence and profile tests that apply the real SQLite
 migrations to a private database per test.
 

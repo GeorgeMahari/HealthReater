@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,37 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowCredentials(); // the auth cookie must travel with fetch(..., { credentials: "include" })
     });
+});
+
+// ---------- API documentation (Swagger / OpenAPI) ----------
+// Served only in Development at /swagger. Swagger UI runs on the API's own origin, so
+// after calling POST /api/auth/login from it the browser keeps the session cookie and the
+// protected endpoints (profile, assessments) work from the UI as well.
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "HealthRater API",
+        Version = "v1",
+        Description =
+            "39-parameter health assessment API. Endpoints marked with a lock need a session: " +
+            "call POST /api/auth/login (or /register) first — the HttpOnly session cookie is then " +
+            "sent automatically by the browser.",
+    });
+
+    // Documents the cookie-based session so protected operations show the lock icon.
+    options.AddSecurityDefinition("sessionCookie", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Cookie,
+        Name = "healthrater.auth",
+        Description = "Set automatically by POST /api/auth/login or /api/auth/register.",
+    });
+    options.OperationFilter<HealthRater.Api.Swagger.AuthorizeOperationFilter>();
+
+    var xml = Path.Combine(AppContext.BaseDirectory, "HealthRater.Api.xml");
+    if (File.Exists(xml)) options.IncludeXmlComments(xml);
 });
 
 // ---------- Database ----------
@@ -130,6 +162,16 @@ if (app.Environment.IsDevelopment() && app.Configuration.GetValue("Database:Migr
     {
         await DevelopmentSeeder.SeedAsync(db);
     }
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "HealthRater API v1");
+        options.DocumentTitle = "HealthRater API";
+    });
 }
 
 app.UseCors(DevCorsPolicy);
