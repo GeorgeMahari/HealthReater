@@ -59,6 +59,17 @@ healthrater/
 
 ## Running it
 
+**Quick start (Windows):** from the project root run
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-dev.ps1
+```
+
+It opens the backend (http://localhost:5080) and the frontend (http://localhost:5173)
+in their own windows and skips whichever is already running. If the app shows
+"Could not reach the HealthRater API. Is the backend running?", the backend window
+isn't open — run the script again (or start the backend as below).
+
 ### Backend (.NET API)
 ```bash
 cd backend/HealthRater.Api
