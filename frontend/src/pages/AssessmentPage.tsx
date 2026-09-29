@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, LoaderCircle, Pencil, UserRound } from "lucide-react";
 import { sections, type FieldDef } from "../data/sections";
 import { FieldInput } from "../components/FieldInput";
 import { ProgressBar } from "../components/ProgressBar";
 import { useAssessment } from "../context/AssessmentContext";
-import { calculateHealthRating, HealthRatingApiError, saveAssessment } from "../api/healthRatingApi";
+import { saveAssessment } from "../api/healthRatingApi";
+import { ApiError } from "../api/http";
 import { useAuth } from "../context/AuthContext";
 import { sectionIcons } from "../data/uiMeta";
-import type { AssessmentInput } from "../types";
 
 const TOTAL_STEPS = sections.length + 1; // + final summary step
 const stepTitles = [...sections.map((s) => s.title), "Review & Calculate"];
@@ -31,7 +31,7 @@ function validateField(field: FieldDef, value: unknown): string | undefined {
 
 export function AssessmentPage() {
   const { assessment, updateField, setResult } = useAssessment();
-  const { user } = useAuth();
+  const { user, expireSession } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -87,18 +87,22 @@ export function AssessmentPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Signed-in users get the result saved to their history; guests just get it calculated.
-      const result = user
-        ? await saveAssessment(assessment as AssessmentInput)
-        : await calculateHealthRating(assessment as AssessmentInput);
+      // Only the answers are sent; the API adds sex and age from the profile and saves the result.
+      const result = await saveAssessment(assessment);
       setResult(result);
       navigate("/results");
     } catch (err) {
-      if (err instanceof HealthRatingApiError) {
-        setSubmitError(err.errors);
-      } else {
-        setSubmitError(["Could not reach the HealthRater API. Is the backend running?"]);
+      if (err instanceof ApiError && err.isUnauthorized) return expireSession();
+      if (err instanceof ApiError && err.status === 409) {
+        return navigate("/complete-profile", { state: { from: "/assessment" } });
       }
+      setSubmitError(
+        err instanceof ApiError && err.status === 0
+          ? ["Could not reach the HealthRater API. Is the backend running?"]
+          : err instanceof ApiError
+            ? err.errors
+            : ["Something went wrong. Please try again."]
+      );
     } finally {
       setSubmitting(false);
     }
@@ -112,6 +116,25 @@ export function AssessmentPage() {
         stepTitles={stepTitles}
         stepIds={stepIds}
       />
+
+      {user && step === 0 && (
+        <aside className="profile-context" aria-label="Your profile">
+          <span className="profile-context-icon" aria-hidden="true">
+            <UserRound size={18} strokeWidth={1.9} />
+          </span>
+          <div>
+            <p className="profile-context-label">Your profile</p>
+            <p className="profile-context-value">
+              {user.sex} · {user.age} years old
+            </p>
+            <p className="profile-context-note">Used automatically for scoring — not asked again.</p>
+          </div>
+          <Link to="/profile" state={{ edit: true }} className="btn btn-ghost btn-sm">
+            <Pencil size={14} strokeWidth={2} aria-hidden="true" />
+            Edit Profile
+          </Link>
+        </aside>
+      )}
 
       {currentSection && (
         <div className="card section-card step-enter" key={currentSection.id}>

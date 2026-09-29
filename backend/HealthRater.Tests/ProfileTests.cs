@@ -85,8 +85,8 @@ public static class ProfileTests
             using var db = TestDatabase.Create();
             var user = TestDatabase.AddUser(db.Context, "a@example.com");
             var keep = TestDatabase.AddUser(db.Context, "keep@example.com");
-            new AssessmentService(db.Context).CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
-            new AssessmentService(db.Context).CreateCompletedAsync(keep.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
+            _ = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
+            _ = new AssessmentService(db.Context).CreateCompletedAsync(keep.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
             new SessionService(db.Context).CreateAsync(user.Id).GetAwaiter().GetResult();
             var profiles = new ProfileService(db.Context);
             profiles.SetAvatarAsync(user.Id, Png(64, 64)).GetAwaiter().GetResult();

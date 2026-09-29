@@ -1,0 +1,81 @@
+// HealthRater sex- and age-specific scoring references.
+//
+// ALL VALUES BELOW ARE PROVISIONAL PLACEHOLDERS ("status": "Provisional"). No official
+// HealthRater tables for these parameters were supplied; the numbers reproduce the
+// heuristics the app has used so far, so existing scores are unchanged. Replace them with
+// the official tables (and set "status": "Official") without changing any code.
+//
+// Selection for (parameter, sex, age): an entry for that exact sex beats a sex-neutral
+// one ("sex": null); the age must lie in [minAge, maxAge]. Every parameter listed here
+// must resolve to exactly one entry for Male and Female at every age 18–100 — the API
+// refuses to start otherwise and reports what is missing or overlapping.
+//
+// Methods:
+//   IdealCenter    score = 10 − |value − center| × penaltyPerUnit
+//   UpperThreshold score = 10 − max(0, value − idealMax) × penaltyPerUnit
+//   RatioToNorm    score = value ÷ norm × 10
+//   Bands          first band with min ≤ value < max ("min"/"max" may be omitted)
+// Scores are rounded and clamped to 1–10.
+//
+// Example of an age-specific table (not active):
+//   { "parameterKey": "bodyFat", "sex": "Male", "minAge": 40, "maxAge": 59, "method": "Bands",
+//     "bands": [ { "max": 11, "score": 8 }, { "min": 11, "max": 22, "score": 10 }, { "min": 22, "score": 6 } ] }
+{
+  "version": "2026.09-provisional",
+  "references": [
+    {
+      "parameterKey": "bodyFat",
+      "sex": "Male",
+      "minAge": 18,
+      "maxAge": 100,
+      "method": "IdealCenter",
+      "center": 15.0,
+      "penaltyPerUnit": 0.4,
+      "status": "Provisional",
+      "note": "Body fat %. Placeholder: ideal 15%, −0.4 per percentage point. Split into age groups when official ranges exist."
+    },
+    {
+      "parameterKey": "bodyFat",
+      "sex": "Female",
+      "minAge": 18,
+      "maxAge": 100,
+      "method": "IdealCenter",
+      "center": 23.0,
+      "penaltyPerUnit": 0.4,
+      "status": "Provisional",
+      "note": "Body fat %. Placeholder: ideal 23%, −0.4 per percentage point. Split into age groups when official ranges exist."
+    },
+    {
+      "parameterKey": "whr",
+      "sex": "Male",
+      "minAge": 18,
+      "maxAge": 100,
+      "method": "UpperThreshold",
+      "idealMax": 0.90,
+      "penaltyPerUnit": 20.0,
+      "status": "Provisional",
+      "note": "Waist-to-hip ratio. Placeholder: full score up to 0.90."
+    },
+    {
+      "parameterKey": "whr",
+      "sex": "Female",
+      "minAge": 18,
+      "maxAge": 100,
+      "method": "UpperThreshold",
+      "idealMax": 0.80,
+      "penaltyPerUnit": 20.0,
+      "status": "Provisional",
+      "note": "Waist-to-hip ratio. Placeholder: full score up to 0.80."
+    },
+    { "parameterKey": "functionalPower", "sex": "Male", "minAge": 18, "maxAge": 29, "method": "RatioToNorm", "norm": 150, "status": "Provisional", "note": "Push-ups + pull-ups + squats; placeholder 'excellent' total." },
+    { "parameterKey": "functionalPower", "sex": "Male", "minAge": 30, "maxAge": 39, "method": "RatioToNorm", "norm": 130, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Male", "minAge": 40, "maxAge": 49, "method": "RatioToNorm", "norm": 110, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Male", "minAge": 50, "maxAge": 59, "method": "RatioToNorm", "norm": 90, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Male", "minAge": 60, "maxAge": 100, "method": "RatioToNorm", "norm": 70, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Female", "minAge": 18, "maxAge": 29, "method": "RatioToNorm", "norm": 110, "status": "Provisional", "note": "Push-ups + pull-ups + squats; placeholder 'excellent' total." },
+    { "parameterKey": "functionalPower", "sex": "Female", "minAge": 30, "maxAge": 39, "method": "RatioToNorm", "norm": 95, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Female", "minAge": 40, "maxAge": 49, "method": "RatioToNorm", "norm": 80, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Female", "minAge": 50, "maxAge": 59, "method": "RatioToNorm", "norm": 65, "status": "Provisional" },
+    { "parameterKey": "functionalPower", "sex": "Female", "minAge": 60, "maxAge": 100, "method": "RatioToNorm", "norm": 50, "status": "Provisional" }
+  ]
+}

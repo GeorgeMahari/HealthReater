@@ -32,9 +32,11 @@ public record CalendarEntryResponse(
     double Immunity,
     double Longevity);
 
+/// <summary>Body data and the profile context recorded at the time of the assessment.</summary>
 public record BodySnapshotResponse(
-    string Sex,
+    string SexAtAssessment,
     int AgeAtAssessment,
+    DateOnly? DateOfBirthAtAssessment,
     double Height,
     string HeightUnit,
     double Weight,
@@ -108,7 +110,7 @@ public record AssessmentDetailResponse(
             new DerivedMetrics { Bmi = a.Bmi, WHtR = a.WaistToHeightRatio, WHR = a.WaistToHipRatio },
             parameters.ToDictionary(p => p.ParameterKey, p => p.Score),
             new BodySnapshotResponse(
-                a.Sex, a.AgeAtAssessment, a.Height, a.HeightUnit, a.Weight, a.WeightUnit,
+                a.SexAtAssessment, a.AgeAtAssessment, a.DateOfBirthAtAssessment, a.Height, a.HeightUnit, a.Weight, a.WeightUnit,
                 a.Waist, a.WaistUnit, a.Hip, a.HipUnit, a.BodyFatPercentage),
             new CardiovascularSnapshotResponse(
                 a.RestingHeartRate, a.HeartRateRecovery, a.BloodPressureSystolic, a.BloodPressureDiastolic),

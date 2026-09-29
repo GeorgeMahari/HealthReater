@@ -85,8 +85,8 @@ the session cookie for the other calls. The raw OpenAPI document is at
 `/swagger/v1/swagger.json`. See [Database](#database) for SQL Server
 and production.
 
-`POST http://localhost:5080/api/health-rating/calculate` with an `AssessmentInput` JSON body
-(see `python/healthrater/sample_profile.py` or the Postman-style example below).
+Assessments require a signed-in account with a complete profile — see
+[Profile context](#profile-context-sex--date-of-birth) and the [API](#api) section.
 
 ### Frontend (React + Vite)
 ```bash
@@ -149,6 +149,50 @@ scale) is a reasonable, commonly-cited wellness heuristic invented for this buil
 centralized in `ScoringConfig.cs` / `config.py`, one field per rule, so it's trivial
 to retune without touching scoring/UI logic elsewhere.
 
+### Profile context (sex & date of birth)
+
+Sex and age are **two of the 39 parameters** (#1 and #2 — they are not extra parameters,
+so the maximum stays 39 × 10 = 390) and they are also the **context** for the
+parameters whose references differ by sex and age. They are not asked in the
+questionnaire: they come from the signed-in user's profile.
+
+- The profile stores `Sex` (Male/Female) and `DateOfBirth`. Age is **calculated** from the
+  date of birth (UTC date) whenever it's needed; it is never stored on the profile.
+- A user must have both before an assessment can start or be submitted — enforced in the
+  frontend (`/complete-profile`, asked once) and in the API (`409 profile_incomplete`).
+  Allowed age: 18–100.
+- On submission the API loads sex and date of birth from the database, calculates the
+  age, scores with them, and stores `SexAtAssessment`, `AgeAtAssessment` and
+  `DateOfBirthAtAssessment` on the assessment. Any `sex`/`age` in the request is ignored.
+- Changing sex or date of birth later only affects **future** assessments; saved ones keep
+  their snapshot and are never re-scored.
+
+### Sex- and age-specific scoring references (configurable)
+
+No official HealthRater tables per sex/age were supplied, so these references are
+**provisional placeholders**, kept outside the code in
+`backend/HealthRater.Core/Scoring/References/scoring-references.json`:
+
+| Parameter | Varies by | Current placeholder |
+|---|---|---|
+| `bodyFat` | sex (age groups supported) | ideal 15 % (male) / 23 % (female), −0.4 per point |
+| `whr` | sex (age groups supported) | full score up to 0.90 (male) / 0.80 (female) |
+| `functionalPower` | sex × age group (18–29 … 60–100) | "excellent" total reps 150…70 (male), 110…50 (female) |
+
+Each entry is `{ parameterKey, sex (or null for any), minAge, maxAge, method, …, status }`
+with methods `IdealCenter`, `UpperThreshold`, `RatioToNorm` or `Bands` (an explicit
+min/max → score table). A sex-specific entry wins over a sex-neutral one. The file is
+validated at startup: every parameter it lists must resolve to exactly one entry for
+Male and Female at every age 18–100, otherwise the API refuses to start and says what is
+missing or overlapping. To plug in the official tables, edit the file (or point
+`Scoring:ReferencesFile` at another one) and set `"status": "Official"` — no code change.
+The shipped values reproduce the previous formulas exactly, so existing scores are unchanged.
+
+Everything else that is sex/age related stays as before: the `age` parameter's own score
+(10 up to 30, gently lower per decade after) and the Four States grouping. Longevity uses
+the same 13 parameter scores as before (including age, body fat and WHR), so sex and age
+reach it only through those scores — there is **no mortality or life-expectancy model**.
+
 ### Four States (configurable grouping, not a clinical model)
 
 `FourStateCalculator.cs` / `four_states.py` maps parameters to states exactly per
@@ -159,12 +203,18 @@ architectural, not a clinically validated predictive model.**
 
 ## API
 
+Both scoring endpoints require a signed-in user with a complete profile and take only the
+questionnaire answers. `POST /api/assessments` scores **and saves**;
+`POST /api/health-rating/calculate` returns the same result without saving (preview).
+Sex and age are read from the profile — if sent, they are ignored.
+
 ```
-POST /api/health-rating/calculate
+POST /api/assessments            (or /api/health-rating/calculate)
 Content-Type: application/json
+Cookie: healthrater.auth=…
 
 {
-  "sex": "Male", "age": 28, "heightCm": 180, "weightKg": 78,
+  "heightCm": 180, "weightKg": 78,
   "waistCm": 82, "hipCm": 98, "bodyFatPercent": 16,
   "restingHeartRateBpm": 58, "heartRateRecoveryBpm": 28,
   "systolicBpMmHg": 115, "diastolicBpMmHg": 74,
@@ -195,13 +245,15 @@ Returns:
   "derivedMetrics": { "bmi": 24.07, "whtr": 0.456, "whr": 0.837 }
 }
 ```
-Invalid input (e.g. age out of 18–100, systolic ≤ diastolic) returns `400` with an
-`errors` array/object.
+Invalid input (e.g. systolic ≤ diastolic) returns `400` with an `errors` array/object;
+an incomplete profile returns `409` with `"code": "profile_incomplete"`; no session `401`.
+The example result above is for a profile of Male, 28.
 
 ## Authentication (Log in / Sign up)
 
-Optional accounts — the assessment stays open to everyone; signing in only adds the
-user to the top bar. Frontend pages: `/login` and `/signup` (`src/pages/AuthPage.tsx`).
+An account is required to take an assessment ("Start your assessment" sends guests to
+log in or sign up, then to `/complete-profile` once, then back to the assessment).
+Frontend pages: `/login`, `/signup` (`src/pages/AuthPage.tsx`), `/complete-profile`.
 
 | Endpoint | Body | Result |
 |---|---|---|
@@ -227,8 +279,8 @@ user to the top bar. Frontend pages: `/login` and `/signup` (`src/pages/AuthPage
 
 ## Assessment history
 
-Signed-in users' completed assessments are saved automatically (the frontend calls
-`POST /api/assessments` instead of `/calculate`); guests still get an unsaved result.
+Every completed assessment is saved automatically to the signed-in user's history
+(`POST /api/assessments`), each as a new record.
 All endpoints require a session and only ever touch the signed-in user's data — the
 owner comes from the session, never from the request. Someone else's id returns `404`.
 
@@ -270,14 +322,15 @@ All data comes from the API below; the frontend never sends a user id.
 
 | Endpoint | Result |
 |---|---|
-| `PUT /api/profile` | `{ firstName, lastName, email }` — validated, email normalized; `409` if taken |
+| `PUT /api/profile` | `{ firstName, lastName, email, sex?, dateOfBirth? }` — validated, email normalized; `409` if taken. When `sex` ("Male"/"Female") or `dateOfBirth` ("yyyy-MM-dd") is sent, both must be valid and give an age of 18–100 |
 | `PUT /api/profile/password` | `{ currentPassword, newPassword }` — requires the current password; signs out other devices |
 | `POST /api/profile/avatar` | multipart field `file`; JPG/PNG/WEBP detected **from the bytes**, ≤ 2 MB, 32–4096 px |
 | `GET /api/profile/avatar` | the user's own image (`nosniff`, private cache); `404` if none |
 | `DELETE /api/profile/avatar` | removes the photo |
 | `DELETE /api/profile` | `{ password }` — permanently deletes the account and all its assessments |
 
-`GET /api/auth/me` also returns `createdAt` and `avatarUrl` (an API-relative, versioned URL).
+`GET /api/auth/me` also returns `createdAt`, `avatarUrl` (an API-relative, versioned URL),
+`sex`, `dateOfBirth`, `age` (calculated today) and `profileCompleted`.
 Avatars are stored in the `UserAvatars` table (not on disk), so no filesystem path is
 ever exposed and they are deleted with the account. The browser centre-crops and
 re-encodes the chosen image to 320×320 before upload, which also strips photo
@@ -353,8 +406,8 @@ The project was started in a sandbox without NuGet access, so `HealthRater.Tests
 small dependency-free console runner (`Framework/TestRunner.cs`, xUnit-like `Assert.*`).
 NuGet is now enabled in `backend/NuGet.Config` (EF Core and Swashbuckle come from it), so
 moving the tests to xUnit is possible whenever wanted. The suite has
-62 tests, including persistence and profile tests that apply the real SQLite
-migrations to a private database per test.
+76 tests, including persistence, profile and profile-context tests that apply the real
+SQLite migrations to a private database per test.
 
 ## What's been executed (not just written)
 

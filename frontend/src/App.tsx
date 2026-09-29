@@ -7,6 +7,8 @@ import { AuthPage } from "./pages/AuthPage";
 import { ProfilePage, ProfileSkeleton } from "./pages/ProfilePage";
 import { HistoricalResultPage } from "./pages/HistoricalResultPage";
 import { RequireAuth } from "./components/RequireAuth";
+import { RequireCompleteProfile } from "./components/RequireCompleteProfile";
+import { CompleteProfilePage } from "./pages/CompleteProfilePage";
 import { AssessmentProvider } from "./context/AssessmentContext";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -17,8 +19,33 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/assessment" element={<AssessmentPage />} />
-            <Route path="/results" element={<ResultsPage />} />
+            {/* An account with a complete profile (sex + date of birth) is required to take an assessment. */}
+            <Route
+              path="/assessment"
+              element={
+                <RequireAuth>
+                  <RequireCompleteProfile>
+                    <AssessmentPage />
+                  </RequireCompleteProfile>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/results"
+              element={
+                <RequireAuth>
+                  <ResultsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/complete-profile"
+              element={
+                <RequireAuth>
+                  <CompleteProfilePage />
+                </RequireAuth>
+              }
+            />
             <Route path="/login" element={<AuthPage mode="login" />} />
             <Route path="/signup" element={<AuthPage mode="signup" />} />
             <Route

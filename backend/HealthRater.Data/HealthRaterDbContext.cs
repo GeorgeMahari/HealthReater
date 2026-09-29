@@ -34,6 +34,8 @@ public abstract class HealthRaterDbContext : DbContext
             user.Property(u => u.FirstName).HasMaxLength(80).IsRequired();
             user.Property(u => u.LastName).HasMaxLength(80).IsRequired();
             user.Ignore(u => u.DisplayName);
+            user.Ignore(u => u.ProfileCompleted);
+            user.Property(u => u.Sex).HasConversion<string>().HasMaxLength(10);
 
             user.HasOne(u => u.Avatar)
                 .WithOne(a => a.User)
@@ -71,7 +73,7 @@ public abstract class HealthRaterDbContext : DbContext
             assessment.HasKey(a => a.Id);
             assessment.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
             assessment.Property(a => a.ScoringVersion).HasMaxLength(40).IsRequired();
-            assessment.Property(a => a.Sex).HasMaxLength(20).IsRequired();
+            assessment.Property(a => a.SexAtAssessment).HasMaxLength(20).IsRequired();
             assessment.Property(a => a.HeightUnit).HasMaxLength(10).IsRequired();
             assessment.Property(a => a.WeightUnit).HasMaxLength(10).IsRequired();
             assessment.Property(a => a.WaistUnit).HasMaxLength(10).IsRequired();

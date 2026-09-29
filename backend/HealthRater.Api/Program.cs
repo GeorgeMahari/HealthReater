@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using HealthRater.Api.Controllers;
+using HealthRater.Core.Scoring.References;
 using HealthRater.Data;
 using HealthRater.Data.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -63,6 +64,15 @@ builder.Services.AddSwaggerGen(options =>
     var xml = Path.Combine(AppContext.BaseDirectory, "HealthRater.Api.xml");
     if (File.Exists(xml)) options.IncludeXmlComments(xml);
 });
+
+// ---------- Scoring references ----------
+// Sex/age-specific scoring references are embedded (Core/Scoring/References/
+// scoring-references.json). Set Scoring:ReferencesFile to use an external file instead.
+// Loading validates the catalog, so a bad configuration stops startup with a clear message.
+var referencesFile = builder.Configuration["Scoring:ReferencesFile"];
+ScoringReferenceCatalog.Current = string.IsNullOrWhiteSpace(referencesFile)
+    ? ScoringReferenceCatalog.LoadEmbedded()
+    : ScoringReferenceCatalog.LoadFromFile(Path.Combine(builder.Environment.ContentRootPath, referencesFile));
 
 // ---------- Database ----------
 // Database:Provider selects the EF Core provider ("Sqlite" by default, or "SqlServer").

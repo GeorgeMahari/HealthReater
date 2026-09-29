@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Sex/age-specific scoring references; see Scoring/References/ScoringReferences.cs -->
+    <EmbeddedResource Include="Scoring\References\scoring-references.json" />
+  </ItemGroup>
+
 </Project>

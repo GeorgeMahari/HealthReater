@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using HealthRater.Api.Dtos;
 using HealthRater.Core.Models;
-using HealthRater.Core.Validation;
 using HealthRater.Data.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -85,19 +84,28 @@ public class AssessmentsController : ControllerBase
         return assessment is null ? NotFound() : Ok(AssessmentDetailResponse.From(assessment));
     }
 
-    /// <summary>Validates, scores and permanently stores a completed assessment for the signed-in user.</summary>
+    /// <summary>
+    /// Scores and permanently stores a completed assessment for the signed-in user. The body
+    /// holds only the questionnaire answers: sex and age come from the user's profile (any
+    /// sex/age in the request is ignored). 409 when the profile has no sex or date of birth.
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(AssessmentDetailResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<AssessmentDetailResponse>> Create([FromBody] AssessmentInput input)
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<AssessmentDetailResponse>> Create([FromBody] AssessmentAnswers answers)
     {
-        var validation = AssessmentValidator.Validate(input);
-        if (!validation.IsValid)
+        var outcome = await _assessments.CreateCompletedAsync(CurrentUserId, answers);
+        if (outcome.ProfileError is not null)
         {
-            return BadRequest(new { errors = validation.Errors });
+            return Conflict(new { code = "profile_incomplete", errors = new[] { outcome.ProfileError } });
+        }
+        if (outcome.ValidationErrors is not null)
+        {
+            return BadRequest(new { errors = outcome.ValidationErrors });
         }
 
-        var created = await _assessments.CreateCompletedAsync(CurrentUserId, input);
+        var created = outcome.Assessment!;
         return CreatedAtAction(nameof(Get), new { id = created.Id }, AssessmentDetailResponse.From(created));
     }
 

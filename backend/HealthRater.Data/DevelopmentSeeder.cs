@@ -29,6 +29,8 @@ public static class DevelopmentSeeder
             PasswordHash = PasswordHasher.Hash(DemoPassword),
             FirstName = "Demo",
             LastName = "Test Data",
+            Sex = Sex.Female,
+            DateOfBirth = DateOnly.FromDateTime(now).AddYears(-34),
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now,
@@ -52,7 +54,8 @@ public static class DevelopmentSeeder
             input.CooperDistanceMeters = scan.Cooper;
 
             var when = now.AddDays(-scan.DaysAgo);
-            var assessment = AssessmentSnapshotBuilder.Build(user.Id, input, HealthRatingEngine.Calculate(input), when);
+            var assessment = AssessmentSnapshotBuilder.Build(
+                user.Id, input, HealthRatingEngine.Calculate(input), when, user.DateOfBirth);
             db.HealthAssessments.Add(assessment);
         }
 

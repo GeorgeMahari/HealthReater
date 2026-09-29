@@ -1,4 +1,5 @@
 using HealthRater.Core.Models;
+using HealthRater.Core.Scoring.References;
 
 namespace HealthRater.Core.Scoring.Scorers;
 
@@ -10,15 +11,9 @@ public static class BodyCompositionScorer
         return ScoringConfig.Clamp1To10(10 - penalty);
     }
 
-    public static int ScoreBodyFat(double bodyFatPercent, Sex sex)
-    {
-        var center = sex == Sex.Male
-            ? ScoringConfig.BodyComposition.MaleIdealCenter
-            : ScoringConfig.BodyComposition.FemaleIdealCenter;
-
-        var penalty = Math.Abs(bodyFatPercent - center) * ScoringConfig.BodyComposition.PenaltyPerPercentPoint;
-        return ScoringConfig.Clamp1To10(10 - penalty);
-    }
+    /// <summary>Sex- and age-specific: uses the configured "bodyFat" scoring reference.</summary>
+    public static int ScoreBodyFat(double bodyFatPercent, ScoringContext context) =>
+        ScoringReferenceCatalog.Current.Score(HealthRatingEngine.Keys.BodyFat, bodyFatPercent, context);
 
     public static int ScoreWHtR(double whtr)
     {
@@ -27,11 +22,7 @@ public static class BodyCompositionScorer
         return ScoringConfig.Clamp1To10(10 - penalty);
     }
 
-    public static int ScoreWHR(double whr, Sex sex)
-    {
-        var idealMax = sex == Sex.Male ? ScoringConfig.Whr.MaleIdealMax : ScoringConfig.Whr.FemaleIdealMax;
-        var over = Math.Max(0, whr - idealMax);
-        var penalty = over * ScoringConfig.Whr.PenaltyPerUnitOver;
-        return ScoringConfig.Clamp1To10(10 - penalty);
-    }
+    /// <summary>Sex- and age-specific: uses the configured "whr" scoring reference.</summary>
+    public static int ScoreWHR(double whr, ScoringContext context) =>
+        ScoringReferenceCatalog.Current.Score(HealthRatingEngine.Keys.WHR, whr, context);
 }

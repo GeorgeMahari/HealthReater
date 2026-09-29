@@ -100,7 +100,8 @@ function HistoricalResult({ id }: { id: string }) {
           <p className="saved-note saved-note-history reveal" style={{ "--i": 1 } as CSSProperties}>
             <ClockArrowLeft size={15} strokeWidth={2} aria-hidden="true" />
             Historical result · completed at{" "}
-            <time dateTime={detail.completedAt}>{formatTime(detail.completedAt)}</time> · scores as recorded then
+            <time dateTime={detail.completedAt}>{formatTime(detail.completedAt)}</time> ·{" "}
+            {detail.body.sexAtAssessment}, {detail.body.ageAtAssessment} at the time · scores as recorded then
           </p>
         }
         actions={

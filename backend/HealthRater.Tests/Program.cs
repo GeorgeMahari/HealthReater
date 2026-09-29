@@ -27,5 +27,8 @@ all.AddRange(PersistenceTests.All());
 Console.WriteLine("-- Profile (edit / avatar / password / account deletion) --");
 all.AddRange(ProfileTests.All());
 
+Console.WriteLine("-- Profile context & sex/age-aware scoring --");
+all.AddRange(ProfileContextTests.All());
+
 var failed = TestRunner.Run(all);
 Environment.Exit(failed == 0 ? 0 : 1);

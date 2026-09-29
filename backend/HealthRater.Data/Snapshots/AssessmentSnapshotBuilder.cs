@@ -19,7 +19,9 @@ public static class AssessmentSnapshotBuilder
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public static HealthAssessment Build(Guid userId, AssessmentInput input, HealthRatingResult result, DateTime utcNow)
+    /// <param name="dateOfBirth">The profile's date of birth at completion, kept as part of the snapshot.</param>
+    public static HealthAssessment Build(
+        Guid userId, AssessmentInput input, HealthRatingResult result, DateTime utcNow, DateOnly? dateOfBirth = null)
     {
         var assessment = new HealthAssessment
         {
@@ -49,8 +51,9 @@ public static class AssessmentSnapshotBuilder
             BloodPressureSystolic = input.SystolicBpMmHg,
             BloodPressureDiastolic = input.DiastolicBpMmHg,
 
-            Sex = input.Sex.ToString(),
+            SexAtAssessment = input.Sex.ToString(),
             AgeAtAssessment = input.Age,
+            DateOfBirthAtAssessment = dateOfBirth,
             Height = input.HeightCm,
             HeightUnit = "cm",
             Weight = input.WeightKg,

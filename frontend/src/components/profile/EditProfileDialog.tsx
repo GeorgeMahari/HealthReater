@@ -5,10 +5,12 @@ import { ApiError } from "../../api/http";
 import { profileApi } from "../../api/profileApi";
 import { Dialog } from "../Dialog";
 import { TextField } from "../TextField";
+import { ProfileContextFields } from "./ProfileContextFields";
+import { validateProfileContext, type SexValue } from "../../utils/profileContext";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Errors = Partial<Record<"firstName" | "lastName" | "email", string>>;
+type Errors = Partial<Record<"firstName" | "lastName" | "email" | "sex" | "dateOfBirth", string>>;
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -21,7 +23,12 @@ interface EditProfileDialogProps {
 /** Name and email editing. Id, creation date and security fields are not editable here. */
 export function EditProfileDialog({ open, user, onClose, onSaved, onUnauthorized }: EditProfileDialogProps) {
   return (
-    <Dialog open={open} onClose={onClose} title="Edit profile" description="Update how your name and email appear in HealthRater.">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Edit profile"
+      description="Changes to sex or date of birth apply to future assessments only — past assessments keep the values recorded at the time."
+    >
       {/* Remount the form each time the dialog opens so it starts from the current values. */}
       {open && <EditProfileForm user={user} onClose={onClose} onSaved={onSaved} onUnauthorized={onUnauthorized} />}
     </Dialog>
@@ -32,12 +39,18 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
   const [email, setEmail] = useState(user.email);
+  const [sex, setSex] = useState<SexValue>(user.sex ?? "");
+  const [dateOfBirth, setDateOfBirth] = useState(user.dateOfBirth ?? "");
   const [errors, setErrors] = useState<Errors>({});
   const [serverErrors, setServerErrors] = useState<string[] | null>(null);
   const [saving, setSaving] = useState(false);
 
   const unchanged =
-    firstName.trim() === user.firstName && lastName.trim() === user.lastName && email.trim().toLowerCase() === user.email;
+    firstName.trim() === user.firstName &&
+    lastName.trim() === user.lastName &&
+    email.trim().toLowerCase() === user.email &&
+    sex === (user.sex ?? "") &&
+    dateOfBirth === (user.dateOfBirth ?? "");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -45,13 +58,19 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
     if (!firstName.trim()) found.firstName = "Please enter your first name.";
     if (!lastName.trim()) found.lastName = "Please enter your last name.";
     if (!EMAIL_PATTERN.test(email.trim())) found.email = "Please enter a valid email address.";
+    Object.assign(found, validateProfileContext(sex, dateOfBirth));
     setErrors(found);
     setServerErrors(null);
     if (Object.keys(found).length) return;
 
     setSaving(true);
     try {
-      onSaved(await profileApi.update(firstName.trim(), lastName.trim(), email.trim()));
+      onSaved(
+        await profileApi.update(firstName.trim(), lastName.trim(), email.trim(), {
+          sex: sex as "Male" | "Female",
+          dateOfBirth,
+        })
+      );
     } catch (err) {
       if (err instanceof ApiError && err.isUnauthorized) return onUnauthorized();
       setServerErrors(err instanceof ApiError ? err.errors : ["Something went wrong. Please try again."]);
@@ -90,6 +109,14 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
         onChange={setEmail}
         error={errors.email}
         hint="You'll use this email to log in."
+      />
+      <ProfileContextFields
+        idPrefix="profile"
+        sex={sex}
+        dateOfBirth={dateOfBirth}
+        onSexChange={setSex}
+        onDateOfBirthChange={setDateOfBirth}
+        errors={{ sex: errors.sex, dateOfBirth: errors.dateOfBirth }}
       />
 
       {serverErrors && (

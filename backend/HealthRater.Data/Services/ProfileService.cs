@@ -1,5 +1,6 @@
 using HealthRater.Core.Auth;
 using HealthRater.Core.Imaging;
+using HealthRater.Core.Models;
 using HealthRater.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,8 +30,13 @@ public class ProfileService
         _db = db;
     }
 
-    /// <summary>Updates name and (optionally changed) email. Inputs must already be validated.</summary>
-    public async Task<(ProfileUpdateResult Result, User? User)> UpdateAsync(Guid userId, string firstName, string lastName, string email)
+    /// <summary>
+    /// Updates name and (optionally changed) email, and, when supplied, sex and date of birth.
+    /// Inputs must already be validated. Existing assessments are never touched: they keep the
+    /// sex/age snapshot taken when they were completed.
+    /// </summary>
+    public async Task<(ProfileUpdateResult Result, User? User)> UpdateAsync(
+        Guid userId, string firstName, string lastName, string email, Sex? sex = null, DateOnly? dateOfBirth = null)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return (ProfileUpdateResult.NotFound, null);
@@ -44,6 +50,8 @@ public class ProfileService
         user.FirstName = firstName.Trim();
         user.LastName = lastName.Trim();
         user.Email = normalized;
+        if (sex is not null) user.Sex = sex;
+        if (dateOfBirth is not null) user.DateOfBirth = dateOfBirth;
         user.UpdatedAt = DateTime.UtcNow;
 
         try

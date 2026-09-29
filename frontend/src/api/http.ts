@@ -1,5 +1,3 @@
-import { flattenErrors } from "./healthRatingApi";
-
 export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5080";
 
 /** Turns an API-relative path (e.g. a user's avatarUrl) into an absolute URL. */
@@ -67,4 +65,21 @@ export async function apiRequest<T>(path: string, { method = "GET", json, form }
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+// ASP.NET's built-in [ApiController] validation returns errors as
+// { errors: { FieldName: ["msg1", "msg2"] } } while our own AssessmentValidator
+// returns { errors: ["msg1", "msg2"] }. Normalize both shapes to a flat string list.
+export function flattenErrors(errors: unknown): string[] {
+  if (Array.isArray(errors)) {
+    return errors.every((e) => typeof e === "string")
+      ? (errors as string[])
+      : errors.flatMap((e) => flattenErrors(e));
+  }
+  if (errors && typeof errors === "object") {
+    return Object.values(errors as Record<string, unknown>).flatMap((v) =>
+      flattenErrors(v)
+    );
+  }
+  return [String(errors)];
 }

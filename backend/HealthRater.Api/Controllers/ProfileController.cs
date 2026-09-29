@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using HealthRater.Api.Dtos;
 using HealthRater.Core.Auth;
+using HealthRater.Core.Models;
+using HealthRater.Core.Profile;
 using HealthRater.Data.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -40,12 +42,23 @@ public class ProfileController : ControllerBase
     public async Task<ActionResult<UserResponse>> Update([FromBody] UpdateProfileRequest request)
     {
         var validation = AuthValidator.ValidateProfile(request.FirstName, request.LastName, request.Email);
+
+        // Profile context: when either is sent, both must be valid (age 18–100 today).
+        Sex? sex = null;
+        if (request.Sex is not null || request.DateOfBirth is not null)
+        {
+            var context = ProfileRules.Validate(request.Sex, request.DateOfBirth, ProfileRules.Today());
+            validation.Errors.AddRange(context.Errors);
+            if (context.IsValid && ProfileRules.TryParseSex(request.Sex, out var parsed)) sex = parsed;
+        }
+
         if (!validation.IsValid)
         {
             return BadRequest(new { errors = validation.Errors });
         }
 
-        var (result, user) = await _profiles.UpdateAsync(CurrentUserId, request.FirstName!, request.LastName!, request.Email!);
+        var (result, user) = await _profiles.UpdateAsync(
+            CurrentUserId, request.FirstName!, request.LastName!, request.Email!, sex, sex is null ? null : request.DateOfBirth);
         return result switch
         {
             ProfileUpdateResult.EmailTaken => Conflict(new { errors = new[] { "An account with this email already exists." } }),
