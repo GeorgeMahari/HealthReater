@@ -1,23 +1,32 @@
 import { Select } from "../Select";
+import { DatePicker } from "../DatePicker";
 import { TextField } from "../TextField";
 import { ageFromDateOfBirth, dateOfBirthBounds } from "../../utils/dates";
-import type { SexValue } from "../../utils/profileContext";
+import type { ProfileFieldErrors, SexValue } from "../../utils/profileContext";
 
 interface ProfileContextFieldsProps {
   sex: SexValue;
   dateOfBirth: string;
   onSexChange: (value: SexValue) => void;
   onDateOfBirthChange: (value: string) => void;
-  errors: { sex?: string; dateOfBirth?: string };
+  heightCm: string;
+  weightKg: string;
+  onHeightChange: (value: string) => void;
+  onWeightChange: (value: string) => void;
+  errors: ProfileFieldErrors;
   idPrefix: string;
 }
 
-/** Sex + date of birth inputs with a live "you are N years old" preview. */
+/** Profile data inputs: sex, date of birth (with a live age preview), height and weight. */
 export function ProfileContextFields({
   sex,
   dateOfBirth,
   onSexChange,
   onDateOfBirthChange,
+  heightCm,
+  weightKg,
+  onHeightChange,
+  onWeightChange,
   errors,
   idPrefix,
 }: ProfileContextFieldsProps) {
@@ -25,6 +34,7 @@ export function ProfileContextFields({
   const age = dateOfBirth ? ageFromDateOfBirth(dateOfBirth) : null;
 
   return (
+    <>
     <div className="auth-name-row">
       <div className={`field ${errors.sex ? "field-error" : ""}`}>
         <label className="field-label" htmlFor={`${idPrefix}-sex`}>
@@ -46,17 +56,57 @@ export function ProfileContextFields({
           </p>
         )}
       </div>
+      <div className={`field ${errors.dateOfBirth ? "field-error" : ""}`}>
+        <label className="field-label" htmlFor={`${idPrefix}-dob`}>
+          Date of birth
+        </label>
+        <DatePicker
+          id={`${idPrefix}-dob`}
+          value={dateOfBirth}
+          onChange={onDateOfBirthChange}
+          min={bounds.min}
+          max={bounds.max}
+          invalid={Boolean(errors.dateOfBirth)}
+          describedBy={`${idPrefix}-dob-hint`}
+        />
+        <p className="field-hint" id={`${idPrefix}-dob-hint`}>
+          {age !== null && age >= 0 ? `You are ${age} years old.` : "Your age is calculated from this date."}
+        </p>
+        {errors.dateOfBirth && (
+          <p className="field-error-text" role="alert">
+            {errors.dateOfBirth}
+          </p>
+        )}
+      </div>
+    </div>
+    <div className="auth-name-row">
       <TextField
-        id={`${idPrefix}-dob`}
-        label="Date of birth"
-        type="date"
-        min={bounds.min}
-        max={bounds.max}
-        value={dateOfBirth}
-        onChange={onDateOfBirthChange}
-        error={errors.dateOfBirth}
-        hint={age !== null && age >= 0 ? `You are ${age} years old.` : undefined}
+        id={`${idPrefix}-height`}
+        label="Height (cm)"
+        type="number"
+        inputMode="decimal"
+        min={50}
+        max={250}
+        step={0.5}
+        placeholder="e.g. 178"
+        value={heightCm}
+        onChange={onHeightChange}
+        error={errors.heightCm}
+      />
+      <TextField
+        id={`${idPrefix}-weight`}
+        label="Weight (kg)"
+        type="number"
+        inputMode="decimal"
+        min={20}
+        max={400}
+        step={0.1}
+        placeholder="e.g. 74.5"
+        value={weightKg}
+        onChange={onWeightChange}
+        error={errors.weightKg}
       />
     </div>
+    </>
   );
 }

@@ -86,8 +86,8 @@ public class AssessmentsController : ControllerBase
 
     /// <summary>
     /// Scores and permanently stores a completed assessment for the signed-in user. The body
-    /// holds only the questionnaire answers: sex and age come from the user's profile (any
-    /// sex/age in the request is ignored). 409 when the profile has no sex or date of birth.
+    /// holds only the questionnaire answers: sex, age, height and weight come from the user's
+    /// profile (any sent in the request are ignored). 409 when the profile is incomplete.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(AssessmentDetailResponse), StatusCodes.Status201Created)]

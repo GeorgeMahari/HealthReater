@@ -1,9 +1,7 @@
 import type { AssessmentAnswers } from "../types";
 
-// Sex and age are not part of the questionnaire: they come from the profile.
+// Sex, age, height and weight are not part of the questionnaire: they come from the profile.
 export const emptyAssessment: AssessmentAnswers = {
-  heightCm: "",
-  weightKg: "",
 
   waistCm: "",
   hipCm: "",

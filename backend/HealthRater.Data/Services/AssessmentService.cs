@@ -38,33 +38,34 @@ public class AssessmentService
     }
 
     /// <summary>
-    /// The user's scoring context (sex + age calculated for <paramref name="today"/> from the
-    /// date of birth), read from the database; or an error when the profile is incomplete or
-    /// the age is out of range.
+    /// The user's profile data for an assessment (sex, age calculated for <paramref name="today"/>
+    /// from the date of birth, height, weight), read from the database; or an error when the
+    /// profile is incomplete or the age is out of range.
     /// </summary>
-    public async Task<(ScoringContext? Context, DateOnly? DateOfBirth, string? Error)> GetScoringContextAsync(Guid userId, DateOnly today)
+    public async Task<(ProfileSnapshot? Profile, DateOnly? DateOfBirth, string? Error)> GetScoringContextAsync(Guid userId, DateOnly today)
     {
-        var profile = await _db.Users.AsNoTracking()
+        var user = await _db.Users.AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new { u.Sex, u.DateOfBirth })
+            .Select(u => new { u.Sex, u.DateOfBirth, u.HeightCm, u.WeightKg })
             .FirstOrDefaultAsync();
-        if (profile is null) return (null, null, "Account not found.");
+        if (user is null) return (null, null, "Account not found.");
 
-        var (context, error) = ProfileRules.ContextFor(profile.Sex, profile.DateOfBirth, today);
-        return (context, profile.DateOfBirth, error);
+        var (profile, error) = ProfileRules.ContextFor(user.Sex, user.DateOfBirth, user.HeightCm, user.WeightKg, today);
+        return (profile, user.DateOfBirth, error);
     }
 
     /// <summary>
-    /// Scores the answers with the user's own profile context and stores the result as a new
-    /// completed assessment. Sex and age always come from the profile, never from the caller.
+    /// Scores the answers with the user's own profile data and stores the result as a new
+    /// completed assessment. Sex, age, height and weight always come from the profile, never
+    /// from the caller.
     /// <paramref name="today"/> is only overridable for tests.
     /// </summary>
     public async Task<AssessmentCreateResult> CreateCompletedAsync(Guid userId, AssessmentAnswers answers, DateOnly? today = null)
     {
-        var (context, dateOfBirth, error) = await GetScoringContextAsync(userId, today ?? ProfileRules.Today());
-        if (context is null) return new AssessmentCreateResult(null, error, null);
+        var (profile, dateOfBirth, error) = await GetScoringContextAsync(userId, today ?? ProfileRules.Today());
+        if (profile is null) return new AssessmentCreateResult(null, error, null);
 
-        var input = AssessmentInput.From(answers, context);
+        var input = AssessmentInput.From(answers, profile);
         var validation = AssessmentValidator.Validate(input);
         if (!validation.IsValid) return new AssessmentCreateResult(null, null, validation.Errors);
 

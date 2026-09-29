@@ -26,11 +26,9 @@ export const sections: SectionDef[] = [
   {
     id: "basic-information",
     title: "Basic Information",
-    description: "Height and weight. Your sex and age come from your profile, so they aren't asked here.",
-    fields: [
-      { key: "heightCm", label: "Height", kind: "number", unit: "cm", min: 50, max: 250 },
-      { key: "weightKg", label: "Weight", kind: "number", unit: "kg", min: 20, max: 400 },
-    ],
+    description: "Your sex, age, height and weight come from your profile — review them and confirm.",
+    // Read-only step: shows the profile data instead of asking for it (see ProfileSummary).
+    fields: [],
   },
   {
     id: "body-metrics",

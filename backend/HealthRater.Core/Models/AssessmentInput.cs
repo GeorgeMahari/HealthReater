@@ -3,20 +3,15 @@ using System.ComponentModel.DataAnnotations;
 namespace HealthRater.Core.Models;
 
 /// <summary>
-/// The answers a user gives in the assessment questionnaire — everything except sex and
-/// age. Those two are profile context (see <see cref="ScoringContext"/>): the API takes
-/// them from the signed-in user's profile, never from the request.
+/// The answers a user gives in the assessment questionnaire — everything except sex, age,
+/// height and weight. Those four come from the user's profile (see <see cref="ProfileSnapshot"/>):
+/// the API takes them from the signed-in user's profile, never from the request.
 /// BMI, WHtR and WHR are NOT collected here — they are derived server-side from
 /// height/weight/waist/hip (see DerivedMetricsCalculator).
 /// </summary>
 public class AssessmentAnswers
 {
-    // ---------- 1. Basic Information (sex & age come from the profile) ----------
-    [Range(50, 250, ErrorMessage = "Height must be between 50 and 250 cm.")]
-    public double HeightCm { get; set; }
-
-    [Range(20, 400, ErrorMessage = "Weight must be between 20 and 400 kg.")]
-    public double WeightKg { get; set; }
+    // ---------- 1. Basic Information: sex, age, height and weight come from the profile ----------
 
     // ---------- 2. Body Metrics ----------
     [Range(30, 250, ErrorMessage = "Waist must be between 30 and 250 cm.")]
@@ -104,9 +99,10 @@ public class AssessmentAnswers
 }
 
 /// <summary>
-/// Everything the scoring engine needs: the questionnaire answers plus the profile context
-/// (sex and age at the time of the assessment). Sex and age are two of the 39 scored
-/// parameters, and also context for sex/age-aware parameters (body fat, WHR, functional power).
+/// Everything the scoring engine needs: the questionnaire answers plus the profile data at
+/// the time of the assessment (sex, age, height, weight). These four are parameters #1–#4 of
+/// the 39; sex and age are also context for sex/age-aware parameters (body fat, WHR,
+/// functional power), and height/weight feed BMI, WHtR and hydration.
 /// </summary>
 public class AssessmentInput : AssessmentAnswers
 {
@@ -116,10 +112,22 @@ public class AssessmentInput : AssessmentAnswers
     [Range(18, 100, ErrorMessage = "Age must be between 18 and 100.")]
     public int Age { get; set; }
 
-    /// <summary>Combines questionnaire answers with the profile context into one scoring input.</summary>
-    public static AssessmentInput From(AssessmentAnswers answers, ScoringContext context)
+    [Range(50, 250, ErrorMessage = "Height must be between 50 and 250 cm.")]
+    public double HeightCm { get; set; }
+
+    [Range(20, 400, ErrorMessage = "Weight must be between 20 and 400 kg.")]
+    public double WeightKg { get; set; }
+
+    /// <summary>Combines questionnaire answers with the profile data into one scoring input.</summary>
+    public static AssessmentInput From(AssessmentAnswers answers, ProfileSnapshot profile)
     {
-        var input = new AssessmentInput { Sex = context.Sex, Age = context.Age };
+        var input = new AssessmentInput
+        {
+            Sex = profile.Sex,
+            Age = profile.Age,
+            HeightCm = profile.HeightCm,
+            WeightKg = profile.WeightKg,
+        };
         foreach (var property in typeof(AssessmentAnswers).GetProperties())
         {
             property.SetValue(input, property.GetValue(answers));
@@ -128,5 +136,11 @@ public class AssessmentInput : AssessmentAnswers
     }
 }
 
-/// <summary>Profile context used for scoring: the user's sex and their age on the day of the assessment.</summary>
+/// <summary>Context for sex/age-specific scoring references: sex and age on the day of the assessment.</summary>
 public record ScoringContext(Sex Sex, int Age);
+
+/// <summary>The profile data used for one assessment: sex, age that day, height and weight.</summary>
+public record ProfileSnapshot(Sex Sex, int Age, double HeightCm, double WeightKg)
+{
+    public ScoringContext Context => new(Sex, Age);
+}

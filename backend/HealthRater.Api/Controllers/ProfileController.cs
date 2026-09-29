@@ -43,11 +43,11 @@ public class ProfileController : ControllerBase
     {
         var validation = AuthValidator.ValidateProfile(request.FirstName, request.LastName, request.Email);
 
-        // Profile context: when either is sent, both must be valid (age 18–100 today).
+        // Profile data: when any of it is sent, all four must be valid (age 18–100 today).
         Sex? sex = null;
-        if (request.Sex is not null || request.DateOfBirth is not null)
+        if (request.Sex is not null || request.DateOfBirth is not null || request.HeightCm is not null || request.WeightKg is not null)
         {
-            var context = ProfileRules.Validate(request.Sex, request.DateOfBirth, ProfileRules.Today());
+            var context = ProfileRules.Validate(request.Sex, request.DateOfBirth, request.HeightCm, request.WeightKg, ProfileRules.Today());
             validation.Errors.AddRange(context.Errors);
             if (context.IsValid && ProfileRules.TryParseSex(request.Sex, out var parsed)) sex = parsed;
         }
@@ -58,7 +58,9 @@ public class ProfileController : ControllerBase
         }
 
         var (result, user) = await _profiles.UpdateAsync(
-            CurrentUserId, request.FirstName!, request.LastName!, request.Email!, sex, sex is null ? null : request.DateOfBirth);
+            CurrentUserId, request.FirstName!, request.LastName!, request.Email!,
+            sex, sex is null ? null : request.DateOfBirth,
+            sex is null ? null : request.HeightCm, sex is null ? null : request.WeightKg);
         return result switch
         {
             ProfileUpdateResult.EmailTaken => Conflict(new { errors = new[] { "An account with this email already exists." } }),

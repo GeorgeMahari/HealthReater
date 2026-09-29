@@ -46,7 +46,9 @@ export function AssessmentJourney() {
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span className="journey-title">{s.title}</span>
-              <span className="journey-count">{s.fields.length} questions</span>
+              <span className="journey-count">
+                {s.fields.length ? `${s.fields.length} questions` : "From your profile"}
+              </span>
             </li>
           );
         })}

@@ -19,7 +19,9 @@ export interface User {
   dateOfBirth: string | null;
   /** Current age, calculated by the API from dateOfBirth. */
   age: number | null;
-  /** Sex and date of birth are both set; required before an assessment can start. */
+  heightCm: number | null;
+  weightKg: number | null;
+  /** Sex, date of birth, height and weight are all set; required before an assessment can start. */
   profileCompleted: boolean;
 }
 

@@ -61,7 +61,8 @@ a {
    positioning and higher z-index from .topbar so menus open above the page. */
 .app > main {
   position: relative;
-  z-index: 1;
+  /* Above the footer, so popovers near the bottom of the page aren't covered by it. */
+  z-index: 2;
 }
 
 .shell {

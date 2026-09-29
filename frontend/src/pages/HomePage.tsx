@@ -8,7 +8,8 @@ import { StateCard } from "../components/StateCard";
 import { AssessmentJourney } from "../components/AssessmentJourney";
 
 export function HomePage() {
-  const totalFields = sections.reduce((sum, s) => sum + s.fields.length, 0);
+  // Questionnaire fields plus the four that come from the profile (sex, age, height, weight).
+  const totalFields = sections.reduce((sum, s) => sum + s.fields.length, 0) + 4;
 
   return (
     <div className="shell home">

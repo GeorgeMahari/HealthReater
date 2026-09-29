@@ -15,6 +15,11 @@ interface ResultsViewProps {
   title: ReactNode;
   /** Optional line under the title (saved note, historical date, …). */
   note?: ReactNode;
+  /**
+   * Profile data recorded with this assessment. When present, the Sex, Age, Height and Weight
+   * rows show these values instead of their 1–10 score — the score still counts in the total.
+   */
+  profileContext?: { sex: string; age: number; heightCm: number; weightKg: number } | null;
   actions: ReactNode;
 }
 
@@ -22,7 +27,7 @@ interface ResultsViewProps {
  * The HealthRater results report. Purely presentational: it displays the numbers it is
  * given — a fresh calculation or a stored historical snapshot — and never re-scores.
  */
-export function ResultsView({ result, input, eyebrow, title, note, actions }: ResultsViewProps) {
+export function ResultsView({ result, input, eyebrow, title, note, actions, profileContext }: ResultsViewProps) {
   const { totalHealthRating, maxHealthRating, percentage, fourStates, derivedMetrics, parameterScores } =
     result;
 
@@ -147,7 +152,12 @@ export function ResultsView({ result, input, eyebrow, title, note, actions }: Re
                 </h3>
                 <ul>
                   {keys.map((key) => (
-                    <ParamRow key={key} name={key} score={parameterScores[key]} />
+                    <ParamRow
+                      key={key}
+                      name={key}
+                      score={parameterScores[key]}
+                      profileValue={profileValueFor(key, profileContext)}
+                    />
                   ))}
                 </ul>
               </div>
@@ -208,8 +218,29 @@ function MetricRow({
   );
 }
 
-function ParamRow({ name, score }: { name: string; score: number }) {
+/** Sex, age, height and weight come from the profile: show the recorded value rather than a score. */
+function profileValueFor(key: string, context: ResultsViewProps["profileContext"]): string | undefined {
+  if (!context) return undefined;
+  if (key === "sex") return context.sex;
+  if (key === "age") return `${context.age} years`;
+  if (key === "height") return `${context.heightCm} cm`;
+  if (key === "weight") return `${context.weightKg} kg`;
+  return undefined;
+}
+
+function ParamRow({ name, score, profileValue }: { name: string; score: number; profileValue?: string }) {
   const tip = termTooltips[name];
+  if (profileValue !== undefined) {
+    return (
+      <li className="param-row param-row-profile">
+        <span className="param-name">{formatKey(name)}</span>
+        <span className="param-profile-value">
+          <span className="param-profile-tag">Profile</span>
+          <strong>{profileValue}</strong>
+        </span>
+      </li>
+    );
+  }
   return (
     <li className={`param-row ${scoreTone(score)}`}>
       <span className="param-name">

@@ -22,6 +22,8 @@ public record UserResponse(
     string? Sex,
     DateOnly? DateOfBirth,
     int? Age,
+    double? HeightCm,
+    double? WeightKg,
     bool ProfileCompleted)
 {
     public static UserResponse From(HealthRater.Data.Entities.User user) => new(
@@ -35,14 +37,24 @@ public record UserResponse(
         user.Sex?.ToString(),
         user.DateOfBirth,
         user.DateOfBirth is { } dob ? HealthRater.Core.Profile.ProfileRules.AgeOn(dob, HealthRater.Core.Profile.ProfileRules.Today()) : null,
+        user.HeightCm,
+        user.WeightKg,
         user.ProfileCompleted);
 }
 
 /// <summary>
-/// Name/email are always required. Sex ("Male"/"Female") and DateOfBirth ("yyyy-MM-dd") are
-/// optional, but when either is sent both must be valid; they only affect future assessments.
+/// Name/email are always required. The profile data — Sex ("Male"/"Female"), DateOfBirth
+/// ("yyyy-MM-dd"), HeightCm, WeightKg — is optional, but when any of it is sent all four must be
+/// valid. It only affects future assessments.
 /// </summary>
-public record UpdateProfileRequest(string? FirstName, string? LastName, string? Email, string? Sex = null, DateOnly? DateOfBirth = null);
+public record UpdateProfileRequest(
+    string? FirstName,
+    string? LastName,
+    string? Email,
+    string? Sex = null,
+    DateOnly? DateOfBirth = null,
+    double? HeightCm = null,
+    double? WeightKg = null);
 
 public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 

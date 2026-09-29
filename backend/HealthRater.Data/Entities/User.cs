@@ -34,6 +34,12 @@ public class User
     /// </summary>
     public DateOnly? DateOfBirth { get; set; }
 
+    /// <summary>Current height in cm. Each assessment keeps its own snapshot.</summary>
+    public double? HeightCm { get; set; }
+
+    /// <summary>Current weight in kg. Each assessment keeps its own snapshot.</summary>
+    public double? WeightKg { get; set; }
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -44,6 +50,6 @@ public class User
 
     public string DisplayName => $"{FirstName} {LastName}".Trim();
 
-    /// <summary>True when both pieces of profile context needed for scoring are present.</summary>
-    public bool ProfileCompleted => Sex is not null && DateOfBirth is not null;
+    /// <summary>True when all profile data needed for an assessment is present.</summary>
+    public bool ProfileCompleted => Sex is not null && DateOfBirth is not null && HeightCm is not null && WeightKg is not null;
 }
