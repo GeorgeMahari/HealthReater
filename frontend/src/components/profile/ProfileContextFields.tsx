@@ -1,5 +1,5 @@
 import { Select } from "../Select";
-import { TextField } from "../TextField";
+import { DatePicker } from "../DatePicker";
 import { ageFromDateOfBirth, dateOfBirthBounds } from "../../utils/dates";
 import type { SexValue } from "../../utils/profileContext";
 
@@ -46,17 +46,28 @@ export function ProfileContextFields({
           </p>
         )}
       </div>
-      <TextField
-        id={`${idPrefix}-dob`}
-        label="Date of birth"
-        type="date"
-        min={bounds.min}
-        max={bounds.max}
-        value={dateOfBirth}
-        onChange={onDateOfBirthChange}
-        error={errors.dateOfBirth}
-        hint={age !== null && age >= 0 ? `You are ${age} years old.` : undefined}
-      />
+      <div className={`field ${errors.dateOfBirth ? "field-error" : ""}`}>
+        <label className="field-label" htmlFor={`${idPrefix}-dob`}>
+          Date of birth
+        </label>
+        <DatePicker
+          id={`${idPrefix}-dob`}
+          value={dateOfBirth}
+          onChange={onDateOfBirthChange}
+          min={bounds.min}
+          max={bounds.max}
+          invalid={Boolean(errors.dateOfBirth)}
+          describedBy={`${idPrefix}-dob-hint`}
+        />
+        <p className="field-hint" id={`${idPrefix}-dob-hint`}>
+          {age !== null && age >= 0 ? `You are ${age} years old.` : "Your age is calculated from this date."}
+        </p>
+        {errors.dateOfBirth && (
+          <p className="field-error-text" role="alert">
+            {errors.dateOfBirth}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

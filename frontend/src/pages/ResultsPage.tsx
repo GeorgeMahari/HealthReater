@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { ResultsView } from "../components/results/ResultsView";
 import { saveResult } from "../utils/exportResult";
 import { formatLongDate, formatTime } from "../utils/dates";
+import type { AssessmentDetail, HealthRatingResult } from "../types";
 
 /** The result of the assessment just completed (kept in AssessmentContext). */
 export function ResultsPage() {
@@ -39,6 +40,7 @@ export function ResultsPage() {
     <ResultsView
       result={result}
       input={assessment}
+      profileContext={profileContextOf(result)}
       eyebrow="Your HealthRater result"
       title="Your personal health report"
       note={note}
@@ -56,4 +58,10 @@ export function ResultsPage() {
       }
     />
   );
+}
+
+/** The saved assessment response carries the profile context recorded with it. */
+function profileContextOf(result: HealthRatingResult) {
+  const body = (result as Partial<AssessmentDetail>).body;
+  return body ? { sex: body.sexAtAssessment, age: body.ageAtAssessment } : null;
 }

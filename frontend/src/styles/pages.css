@@ -484,6 +484,35 @@
   color: var(--color-text);
 }
 
+/* Sex / Age: values from the profile rather than a 1–10 score */
+.param-row-profile {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.param-profile-value {
+  grid-column: 2;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.param-profile-value strong {
+  color: var(--c-navy);
+}
+
+.param-profile-tag {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .param-row strong {
   text-align: right;
   color: var(--tone-c);

@@ -94,6 +94,7 @@ function HistoricalResult({ id }: { id: string }) {
       <ResultsView
         result={detail}
         input={detail.input}
+        profileContext={{ sex: detail.body.sexAtAssessment, age: detail.body.ageAtAssessment }}
         eyebrow="Saved HealthRater result"
         title={`Assessment from ${formatLongDate(detail.completedAt)}`}
         note={

@@ -31,6 +31,12 @@ export function Select({ id, value, options, placeholder = "Select…", onChange
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  // Keep the highlighted option visible (long lists such as years scroll to the selection).
+  useEffect(() => {
+    if (!open) return;
+    rootRef.current?.querySelector(".select-option-active")?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex]);
+
   const openList = () => {
     setActiveIndex(Math.max(0, options.findIndex((o) => o.value === value)));
     setOpen(true);
@@ -65,6 +71,11 @@ export function Select({ id, value, options, placeholder = "Select…", onChange
         if (options[activeIndex]) choose(options[activeIndex]);
         break;
       case "Escape":
+        // Handled here: stop it from also closing a surrounding popover or dialog.
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        break;
       case "Tab":
         setOpen(false);
         break;
