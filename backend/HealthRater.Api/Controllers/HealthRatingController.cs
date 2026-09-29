@@ -23,7 +23,7 @@ public class HealthRatingController : ControllerBase
 
     /// <summary>
     /// Scores questionnaire answers WITHOUT saving them (a preview). Requires a signed-in user
-    /// with a complete profile: sex and age come from the profile, never from the request.
+    /// with a complete profile: sex, age, height and weight come from the profile, never from the request.
     /// Use POST /api/assessments to score and save.
     /// </summary>
     [HttpPost("calculate")]
@@ -33,13 +33,13 @@ public class HealthRatingController : ControllerBase
     public async Task<ActionResult<HealthRatingResult>> Calculate([FromBody] AssessmentAnswers answers)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var (context, _, error) = await _assessments.GetScoringContextAsync(userId, ProfileRules.Today());
-        if (context is null)
+        var (profile, _, error) = await _assessments.GetScoringContextAsync(userId, ProfileRules.Today());
+        if (profile is null)
         {
             return Conflict(new { code = "profile_incomplete", errors = new[] { error } });
         }
 
-        var input = AssessmentInput.From(answers, context);
+        var input = AssessmentInput.From(answers, profile);
         var validation = AssessmentValidator.Validate(input);
         if (!validation.IsValid)
         {

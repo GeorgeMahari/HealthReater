@@ -33,7 +33,7 @@ public sealed class TestDatabase : IDisposable
         new SqliteHealthRaterDbContext(new DbContextOptionsBuilder<SqliteHealthRaterDbContext>().UseSqlite(_connection).Options);
 
     /// <summary>
-    /// Adds a user with a complete profile: by default Male, aged 28 today (matching
+    /// Adds a user with a complete profile: by default Male, aged 28 today, 180 cm, 78 kg (matching
     /// SampleProfile.Healthy). Pass <paramref name="completeProfile"/> = false for a new account.
     /// </summary>
     public static User AddUser(
@@ -49,6 +49,8 @@ public sealed class TestDatabase : IDisposable
             LastName = "User",
             Sex = completeProfile ? sex : null,
             DateOfBirth = completeProfile ? ProfileRules.Today().AddYears(-ageToday).AddDays(-10) : null,
+            HeightCm = completeProfile ? 180 : null,
+            WeightKg = completeProfile ? 78 : null,
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now,

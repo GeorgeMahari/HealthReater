@@ -5,7 +5,7 @@ import { ApiError } from "../api/http";
 import { profileApi } from "../api/profileApi";
 import { useAuth } from "../context/AuthContext";
 import { ProfileContextFields } from "../components/profile/ProfileContextFields";
-import { validateProfileContext, type SexValue } from "../utils/profileContext";
+import { validateProfileContext, type ProfileFieldErrors, type SexValue } from "../utils/profileContext";
 
 /**
  * Asked once, before the first assessment: sex and date of birth. Afterwards they are
@@ -19,7 +19,9 @@ export function CompleteProfilePage() {
 
   const [sex, setSex] = useState<SexValue>(user?.sex ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth ?? "");
-  const [errors, setErrors] = useState<{ sex?: string; dateOfBirth?: string }>({});
+  const [heightCm, setHeightCm] = useState(user?.heightCm != null ? String(user.heightCm) : "");
+  const [weightKg, setWeightKg] = useState(user?.weightKg != null ? String(user.weightKg) : "");
+  const [errors, setErrors] = useState<ProfileFieldErrors>({});
   const [serverErrors, setServerErrors] = useState<string[] | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -27,7 +29,7 @@ export function CompleteProfilePage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const found = validateProfileContext(sex, dateOfBirth);
+    const found = validateProfileContext(sex, dateOfBirth, heightCm, weightKg);
     setErrors(found);
     setServerErrors(null);
     if (Object.keys(found).length || !user) return;
@@ -37,6 +39,8 @@ export function CompleteProfilePage() {
       const updated = await profileApi.update(user.firstName, user.lastName, user.email, {
         sex: sex as "Male" | "Female",
         dateOfBirth,
+        heightCm: Number(heightCm),
+        weightKg: Number(weightKg),
       });
       updateUser(updated);
       navigate(from, { replace: true });
@@ -56,8 +60,9 @@ export function CompleteProfilePage() {
         <p className="eyebrow">One-time setup</p>
         <h1 id="complete-title">Complete your profile</h1>
         <p className="auth-sub">
-          Hi {user.firstName}! HealthRater needs your sex and date of birth to score your assessment — for example,
-          body-fat and fitness references differ by sex and age. You'll only be asked once.
+          Hi {user.firstName}! HealthRater needs a few basics to score your assessments — body-fat and fitness
+          references differ by sex and age, and height and weight give your BMI. You'll only be asked once; each
+          assessment then just asks you to confirm them.
         </p>
 
         <form className="auth-form" onSubmit={submit} noValidate>
@@ -72,6 +77,16 @@ export function CompleteProfilePage() {
             onDateOfBirthChange={(v) => {
               setDateOfBirth(v);
               setErrors((x) => ({ ...x, dateOfBirth: undefined }));
+            }}
+            heightCm={heightCm}
+            weightKg={weightKg}
+            onHeightChange={(v) => {
+              setHeightCm(v);
+              setErrors((x) => ({ ...x, heightCm: undefined }));
+            }}
+            onWeightChange={(v) => {
+              setWeightKg(v);
+              setErrors((x) => ({ ...x, weightKg: undefined }));
             }}
             errors={errors}
           />
@@ -92,7 +107,7 @@ export function CompleteProfilePage() {
 
         <p className="auth-note">
           <ShieldCheck size={14} strokeWidth={2} aria-hidden="true" />
-          Your age is calculated from your date of birth. You can change both later in your profile; past
+          Your age is calculated from your date of birth. You can change these later in your profile; past
           assessments keep the values recorded at the time.
         </p>
       </section>

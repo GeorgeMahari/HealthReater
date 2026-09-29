@@ -73,12 +73,12 @@ public static class HealthRatingEngine
     }
 
     /// <summary>
-    /// Scores questionnaire answers for a person with the given profile context. Sex and age
-    /// are two of the 39 parameters and also select the sex/age-specific references used for
-    /// body fat, WHR and functional power (see ScoringReferenceCatalog).
+    /// Scores questionnaire answers for a person with the given profile data. Sex, age, height
+    /// and weight are four of the 39 parameters; sex and age also select the sex/age-specific
+    /// references used for body fat, WHR and functional power (see ScoringReferenceCatalog).
     /// </summary>
-    public static HealthRatingResult Calculate(AssessmentAnswers answers, ScoringContext context) =>
-        Calculate(AssessmentInput.From(answers, context));
+    public static HealthRatingResult Calculate(AssessmentAnswers answers, ProfileSnapshot profile) =>
+        Calculate(AssessmentInput.From(answers, profile));
 
     public static HealthRatingResult Calculate(AssessmentInput input)
     {

@@ -151,21 +151,25 @@ to retune without touching scoring/UI logic elsewhere.
 
 ### Profile context (sex & date of birth)
 
-Sex and age are **two of the 39 parameters** (#1 and #2 — they are not extra parameters,
-so the maximum stays 39 × 10 = 390) and they are also the **context** for the
-parameters whose references differ by sex and age. They are not asked in the
-questionnaire: they come from the signed-in user's profile.
+Sex, age, height and weight are **parameters #1–#4 of the 39** (not extra parameters, so
+the maximum stays 39 × 10 = 390). They are not asked in the questionnaire: they come from
+the signed-in user's profile, and the first assessment step ("Basic Information") only
+shows them for the user to confirm or edit. Sex and age are also the **context** for the
+parameters whose references differ by sex and age; height and weight feed BMI, WHtR and
+hydration. On the results page these four rows show the recorded values (e.g. "Male",
+"21 years", "180 cm", "78 kg") rather than their score, which still counts in the total.
 
-- The profile stores `Sex` (Male/Female) and `DateOfBirth`. Age is **calculated** from the
-  date of birth (UTC date) whenever it's needed; it is never stored on the profile.
-- A user must have both before an assessment can start or be submitted — enforced in the
-  frontend (`/complete-profile`, asked once) and in the API (`409 profile_incomplete`).
-  Allowed age: 18–100.
-- On submission the API loads sex and date of birth from the database, calculates the
-  age, scores with them, and stores `SexAtAssessment`, `AgeAtAssessment` and
-  `DateOfBirthAtAssessment` on the assessment. Any `sex`/`age` in the request is ignored.
-- Changing sex or date of birth later only affects **future** assessments; saved ones keep
-  their snapshot and are never re-scored.
+- The profile stores `Sex` (Male/Female), `DateOfBirth`, `HeightCm` and `WeightKg`. Age is
+  **calculated** from the date of birth (UTC date) whenever it's needed; it is never stored
+  on the profile.
+- A user must have all four before an assessment can start or be submitted — enforced in
+  the frontend (`/complete-profile`, asked once) and in the API (`409 profile_incomplete`).
+  Allowed: age 18–100, height 50–250 cm, weight 20–400 kg.
+- On submission the API loads the profile, calculates the age, scores with it, and stores
+  `SexAtAssessment`, `AgeAtAssessment`, `DateOfBirthAtAssessment`, `Height` and `Weight` on
+  the assessment. Any `sex`/`age`/`heightCm`/`weightKg` in the request is ignored.
+- Changing the profile later only affects **future** assessments; saved ones keep their
+  snapshot and are never re-scored.
 
 ### Sex- and age-specific scoring references (configurable)
 
@@ -204,9 +208,10 @@ architectural, not a clinically validated predictive model.**
 ## API
 
 Both scoring endpoints require a signed-in user with a complete profile and take only the
-questionnaire answers. `POST /api/assessments` scores **and saves**;
+questionnaire answers (everything except sex, age, height and weight).
+`POST /api/assessments` scores **and saves**;
 `POST /api/health-rating/calculate` returns the same result without saving (preview).
-Sex and age are read from the profile — if sent, they are ignored.
+Sex, age, height and weight are read from the profile — if sent, they are ignored.
 
 ```
 POST /api/assessments            (or /api/health-rating/calculate)
@@ -214,7 +219,6 @@ Content-Type: application/json
 Cookie: healthrater.auth=…
 
 {
-  "heightCm": 180, "weightKg": 78,
   "waistCm": 82, "hipCm": 98, "bodyFatPercent": 16,
   "restingHeartRateBpm": 58, "heartRateRecoveryBpm": 28,
   "systolicBpMmHg": 115, "diastolicBpMmHg": 74,
@@ -247,7 +251,7 @@ Returns:
 ```
 Invalid input (e.g. systolic ≤ diastolic) returns `400` with an `errors` array/object;
 an incomplete profile returns `409` with `"code": "profile_incomplete"`; no session `401`.
-The example result above is for a profile of Male, 28.
+The example result above is for a profile of Male, 28, 180 cm, 78 kg.
 
 ## Authentication (Log in / Sign up)
 
@@ -322,7 +326,7 @@ All data comes from the API below; the frontend never sends a user id.
 
 | Endpoint | Result |
 |---|---|
-| `PUT /api/profile` | `{ firstName, lastName, email, sex?, dateOfBirth? }` — validated, email normalized; `409` if taken. When `sex` ("Male"/"Female") or `dateOfBirth` ("yyyy-MM-dd") is sent, both must be valid and give an age of 18–100 |
+| `PUT /api/profile` | `{ firstName, lastName, email, sex?, dateOfBirth?, heightCm?, weightKg? }` — validated, email normalized; `409` if taken. When any of the profile data is sent, all four must be valid (sex "Male"/"Female", date "yyyy-MM-dd" giving age 18–100, height 50–250 cm, weight 20–400 kg) |
 | `PUT /api/profile/password` | `{ currentPassword, newPassword }` — requires the current password; signs out other devices |
 | `POST /api/profile/avatar` | multipart field `file`; JPG/PNG/WEBP detected **from the bytes**, ≤ 2 MB, 32–4096 px |
 | `GET /api/profile/avatar` | the user's own image (`nosniff`, private cache); `404` if none |
@@ -330,7 +334,7 @@ All data comes from the API below; the frontend never sends a user id.
 | `DELETE /api/profile` | `{ password }` — permanently deletes the account and all its assessments |
 
 `GET /api/auth/me` also returns `createdAt`, `avatarUrl` (an API-relative, versioned URL),
-`sex`, `dateOfBirth`, `age` (calculated today) and `profileCompleted`.
+`sex`, `dateOfBirth`, `age` (calculated today), `heightCm`, `weightKg` and `profileCompleted`.
 Avatars are stored in the `UserAvatars` table (not on disk), so no filesystem path is
 ever exposed and they are deleted with the account. The browser centre-crops and
 re-encodes the chosen image to 320×320 before upload, which also strips photo

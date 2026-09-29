@@ -16,10 +16,10 @@ interface ResultsViewProps {
   /** Optional line under the title (saved note, historical date, …). */
   note?: ReactNode;
   /**
-   * Sex and age recorded with this assessment (from the profile). When present, the Sex and
-   * Age rows show these values instead of their 1–10 score — the score still counts in the total.
+   * Profile data recorded with this assessment. When present, the Sex, Age, Height and Weight
+   * rows show these values instead of their 1–10 score — the score still counts in the total.
    */
-  profileContext?: { sex: string; age: number } | null;
+  profileContext?: { sex: string; age: number; heightCm: number; weightKg: number } | null;
   actions: ReactNode;
 }
 
@@ -218,11 +218,13 @@ function MetricRow({
   );
 }
 
-/** Sex and age come from the profile: show the recorded value rather than a score. */
+/** Sex, age, height and weight come from the profile: show the recorded value rather than a score. */
 function profileValueFor(key: string, context: ResultsViewProps["profileContext"]): string | undefined {
   if (!context) return undefined;
   if (key === "sex") return context.sex;
   if (key === "age") return `${context.age} years`;
+  if (key === "height") return `${context.heightCm} cm`;
+  if (key === "weight") return `${context.weightKg} kg`;
   return undefined;
 }
 

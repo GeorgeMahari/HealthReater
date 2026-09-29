@@ -67,10 +67,10 @@ export interface AssessmentInput {
 }
 
 /**
- * What the questionnaire collects. Sex and age are NOT asked: the API takes them from the
- * signed-in user's profile (and ignores them if sent).
+ * What the questionnaire collects. Sex, age, height and weight are NOT asked: the API takes
+ * them from the signed-in user's profile (and ignores them if sent).
  */
-export type AssessmentAnswers = Omit<AssessmentInput, "sex" | "age">;
+export type AssessmentAnswers = Omit<AssessmentInput, "sex" | "age" | "heightCm" | "weightKg">;
 
 export interface DerivedMetrics {
   bmi: number;

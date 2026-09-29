@@ -36,7 +36,8 @@ public class ProfileService
     /// sex/age snapshot taken when they were completed.
     /// </summary>
     public async Task<(ProfileUpdateResult Result, User? User)> UpdateAsync(
-        Guid userId, string firstName, string lastName, string email, Sex? sex = null, DateOnly? dateOfBirth = null)
+        Guid userId, string firstName, string lastName, string email,
+        Sex? sex = null, DateOnly? dateOfBirth = null, double? heightCm = null, double? weightKg = null)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return (ProfileUpdateResult.NotFound, null);
@@ -52,6 +53,8 @@ public class ProfileService
         user.Email = normalized;
         if (sex is not null) user.Sex = sex;
         if (dateOfBirth is not null) user.DateOfBirth = dateOfBirth;
+        if (heightCm is not null) user.HeightCm = heightCm;
+        if (weightKg is not null) user.WeightKg = weightKg;
         user.UpdatedAt = DateTime.UtcNow;
 
         try

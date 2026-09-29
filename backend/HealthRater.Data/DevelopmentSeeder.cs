@@ -31,6 +31,8 @@ public static class DevelopmentSeeder
             LastName = "Test Data",
             Sex = Sex.Female,
             DateOfBirth = DateOnly.FromDateTime(now).AddYears(-34),
+            HeightCm = 168,
+            WeightKg = 64,
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now,

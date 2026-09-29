@@ -63,5 +63,7 @@ export function ResultsPage() {
 /** The saved assessment response carries the profile context recorded with it. */
 function profileContextOf(result: HealthRatingResult) {
   const body = (result as Partial<AssessmentDetail>).body;
-  return body ? { sex: body.sexAtAssessment, age: body.ageAtAssessment } : null;
+  return body
+    ? { sex: body.sexAtAssessment, age: body.ageAtAssessment, heightCm: body.height, weightKg: body.weight }
+    : null;
 }

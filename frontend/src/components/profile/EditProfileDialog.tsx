@@ -10,7 +10,7 @@ import { validateProfileContext, type SexValue } from "../../utils/profileContex
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Errors = Partial<Record<"firstName" | "lastName" | "email" | "sex" | "dateOfBirth", string>>;
+type Errors = Partial<Record<"firstName" | "lastName" | "email" | "sex" | "dateOfBirth" | "heightCm" | "weightKg", string>>;
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ export function EditProfileDialog({ open, user, onClose, onSaved, onUnauthorized
       open={open}
       onClose={onClose}
       title="Edit profile"
-      description="Changes to sex or date of birth apply to future assessments only — past assessments keep the values recorded at the time."
+      description="Changes to sex, date of birth, height or weight apply to future assessments only — past assessments keep the values recorded at the time."
     >
       {/* Remount the form each time the dialog opens so it starts from the current values. */}
       {open && <EditProfileForm user={user} onClose={onClose} onSaved={onSaved} onUnauthorized={onUnauthorized} />}
@@ -41,6 +41,8 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
   const [email, setEmail] = useState(user.email);
   const [sex, setSex] = useState<SexValue>(user.sex ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(user.dateOfBirth ?? "");
+  const [heightCm, setHeightCm] = useState(user.heightCm != null ? String(user.heightCm) : "");
+  const [weightKg, setWeightKg] = useState(user.weightKg != null ? String(user.weightKg) : "");
   const [errors, setErrors] = useState<Errors>({});
   const [serverErrors, setServerErrors] = useState<string[] | null>(null);
   const [saving, setSaving] = useState(false);
@@ -50,7 +52,9 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
     lastName.trim() === user.lastName &&
     email.trim().toLowerCase() === user.email &&
     sex === (user.sex ?? "") &&
-    dateOfBirth === (user.dateOfBirth ?? "");
+    dateOfBirth === (user.dateOfBirth ?? "") &&
+    heightCm === (user.heightCm != null ? String(user.heightCm) : "") &&
+    weightKg === (user.weightKg != null ? String(user.weightKg) : "");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -58,7 +62,7 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
     if (!firstName.trim()) found.firstName = "Please enter your first name.";
     if (!lastName.trim()) found.lastName = "Please enter your last name.";
     if (!EMAIL_PATTERN.test(email.trim())) found.email = "Please enter a valid email address.";
-    Object.assign(found, validateProfileContext(sex, dateOfBirth));
+    Object.assign(found, validateProfileContext(sex, dateOfBirth, heightCm, weightKg));
     setErrors(found);
     setServerErrors(null);
     if (Object.keys(found).length) return;
@@ -69,6 +73,8 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
         await profileApi.update(firstName.trim(), lastName.trim(), email.trim(), {
           sex: sex as "Male" | "Female",
           dateOfBirth,
+          heightCm: Number(heightCm),
+          weightKg: Number(weightKg),
         })
       );
     } catch (err) {
@@ -116,7 +122,11 @@ function EditProfileForm({ user, onClose, onSaved, onUnauthorized }: Omit<EditPr
         dateOfBirth={dateOfBirth}
         onSexChange={setSex}
         onDateOfBirthChange={setDateOfBirth}
-        errors={{ sex: errors.sex, dateOfBirth: errors.dateOfBirth }}
+        heightCm={heightCm}
+        weightKg={weightKg}
+        onHeightChange={setHeightCm}
+        onWeightChange={setWeightKg}
+        errors={{ sex: errors.sex, dateOfBirth: errors.dateOfBirth, heightCm: errors.heightCm, weightKg: errors.weightKg }}
       />
 
       {serverErrors && (

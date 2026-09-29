@@ -120,10 +120,18 @@ export function ProfilePage() {
                 <dt>Age</dt>
                 <dd>{user.age}</dd>
               </div>
+              <div>
+                <dt>Height</dt>
+                <dd>{user.heightCm} cm</dd>
+              </div>
+              <div>
+                <dt>Weight</dt>
+                <dd>{user.weightKg} kg</dd>
+              </div>
             </dl>
           ) : (
             <div className="profile-incomplete" role="status">
-              <p>Add your sex and date of birth to start assessments.</p>
+              <p>Add your sex, date of birth, height and weight to start assessments.</p>
               <Link to="/complete-profile" state={{ from: "/profile" }} className="btn btn-primary btn-sm">
                 Complete profile
               </Link>

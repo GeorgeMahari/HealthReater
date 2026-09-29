@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, LoaderCircle, Pencil, UserRound } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ProfileSummary } from "../components/ProfileSummary";
+import { ArrowLeft, ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { sections, type FieldDef } from "../data/sections";
 import { FieldInput } from "../components/FieldInput";
 import { ProgressBar } from "../components/ProgressBar";
@@ -117,25 +118,6 @@ export function AssessmentPage() {
         stepIds={stepIds}
       />
 
-      {user && step === 0 && (
-        <aside className="profile-context" aria-label="Your profile">
-          <span className="profile-context-icon" aria-hidden="true">
-            <UserRound size={18} strokeWidth={1.9} />
-          </span>
-          <div>
-            <p className="profile-context-label">Your profile</p>
-            <p className="profile-context-value">
-              {user.sex} · {user.age} years old
-            </p>
-            <p className="profile-context-note">Used automatically for scoring — not asked again.</p>
-          </div>
-          <Link to="/profile" state={{ edit: true }} className="btn btn-ghost btn-sm">
-            <Pencil size={14} strokeWidth={2} aria-hidden="true" />
-            Edit Profile
-          </Link>
-        </aside>
-      )}
-
       {currentSection && (
         <div className="card section-card step-enter" key={currentSection.id}>
           <div className="section-card-head">
@@ -147,6 +129,9 @@ export function AssessmentPage() {
               <p className="section-desc">{currentSection.description}</p>
             </div>
           </div>
+          {currentSection.fields.length === 0 && user ? (
+            <ProfileSummary user={user} />
+          ) : (
           <div className="field-grid">
             {currentSection.fields.map((field) => (
               <FieldInput
@@ -158,6 +143,7 @@ export function AssessmentPage() {
               />
             ))}
           </div>
+          )}
         </div>
       )}
 
@@ -185,6 +171,14 @@ export function AssessmentPage() {
                   {section.title}
                 </h4>
                 <dl>
+                  {section.fields.length === 0 && user && (
+                    <>
+                      <div className="summary-row"><dt>Sex</dt><dd>{user.sex}</dd></div>
+                      <div className="summary-row"><dt>Age</dt><dd>{user.age} years</dd></div>
+                      <div className="summary-row"><dt>Height</dt><dd>{user.heightCm} cm</dd></div>
+                      <div className="summary-row"><dt>Weight</dt><dd>{user.weightKg} kg</dd></div>
+                    </>
+                  )}
                   {section.fields.map((field) => (
                     <div className="summary-row" key={field.key}>
                       <dt>{field.label}</dt>
@@ -217,8 +211,17 @@ export function AssessmentPage() {
         </button>
         {!isSummaryStep && (
           <button type="button" className="btn btn-primary" onClick={goNext}>
-            Next
-            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+            {currentSection?.fields.length === 0 ? (
+              <>
+                <Check size={16} strokeWidth={2.2} aria-hidden="true" />
+                Confirm and continue
+              </>
+            ) : (
+              <>
+                Next
+                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+              </>
+            )}
           </button>
         )}
         {isSummaryStep && (

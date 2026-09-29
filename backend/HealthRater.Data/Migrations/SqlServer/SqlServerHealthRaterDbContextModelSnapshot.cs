@@ -259,6 +259,9 @@ namespace HealthRater.Data.Migrations.SqlServer
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
+                    b.Property<double?>("HeightCm")
+                        .HasColumnType("float");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -278,6 +281,9 @@ namespace HealthRater.Data.Migrations.SqlServer
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<double?>("WeightKg")
+                        .HasColumnType("float");
 
                     b.HasKey("Id");
 

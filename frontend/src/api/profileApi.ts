@@ -2,12 +2,12 @@ import type { User } from "./authApi";
 import { apiRequest } from "./http";
 
 export const profileApi = {
-  /** Sex and date of birth are optional; when sent, both are validated (age 18–100). */
+  /** The profile data is optional; when sent, all four fields are validated (age 18–100). */
   update: (
     firstName: string,
     lastName: string,
     email: string,
-    profileContext?: { sex: "Male" | "Female"; dateOfBirth: string }
+    profileContext?: { sex: "Male" | "Female"; dateOfBirth: string; heightCm: number; weightKg: number }
   ) => apiRequest<User>("/api/profile", { method: "PUT", json: { firstName, lastName, email, ...profileContext } }),
 
   changePassword: (currentPassword: string, newPassword: string) =>
