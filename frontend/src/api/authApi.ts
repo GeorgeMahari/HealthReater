@@ -1,4 +1,4 @@
-import { flattenErrors } from "./healthRatingApi";
+import { flattenErrors } from "./http";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5080";
 
@@ -13,6 +13,14 @@ export interface User {
   createdAt: string;
   /** API-relative, versioned URL of the user's own avatar, or null. */
   avatarUrl: string | null;
+  /** Profile context used for scoring. */
+  sex: "Male" | "Female" | null;
+  /** "yyyy-MM-dd"; the source of truth for age. */
+  dateOfBirth: string | null;
+  /** Current age, calculated by the API from dateOfBirth. */
+  age: number | null;
+  /** Sex and date of birth are both set; required before an assessment can start. */
+  profileCompleted: boolean;
 }
 
 export class AuthApiError extends Error {

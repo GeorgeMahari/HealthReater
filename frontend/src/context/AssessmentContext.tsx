@@ -1,11 +1,11 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import type { AssessmentInput, HealthRatingResult } from "../types";
+import type { AssessmentAnswers, HealthRatingResult } from "../types";
 import { emptyAssessment } from "../data/emptyAssessment";
 
 interface AssessmentContextValue {
-  assessment: AssessmentInput;
-  setAssessment: (updater: (prev: AssessmentInput) => AssessmentInput) => void;
-  updateField: <K extends keyof AssessmentInput>(key: K, value: AssessmentInput[K]) => void;
+  assessment: AssessmentAnswers;
+  setAssessment: (updater: (prev: AssessmentAnswers) => AssessmentAnswers) => void;
+  updateField: <K extends keyof AssessmentAnswers>(key: K, value: AssessmentAnswers[K]) => void;
   result: HealthRatingResult | null;
   setResult: (result: HealthRatingResult | null) => void;
   resetAssessment: () => void;
@@ -14,7 +14,7 @@ interface AssessmentContextValue {
 const AssessmentContext = createContext<AssessmentContextValue | null>(null);
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
-  const [assessment, setAssessmentState] = useState<AssessmentInput>(emptyAssessment);
+  const [assessment, setAssessmentState] = useState<AssessmentAnswers>(emptyAssessment);
   const [result, setResult] = useState<HealthRatingResult | null>(null);
 
   const value = useMemo<AssessmentContextValue>(

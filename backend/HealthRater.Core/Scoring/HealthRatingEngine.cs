@@ -72,9 +72,18 @@ public static class HealthRatingEngine
         return ScoringConfig.Clamp1To10(10 - decadesOver);
     }
 
+    /// <summary>
+    /// Scores questionnaire answers for a person with the given profile context. Sex and age
+    /// are two of the 39 parameters and also select the sex/age-specific references used for
+    /// body fat, WHR and functional power (see ScoringReferenceCatalog).
+    /// </summary>
+    public static HealthRatingResult Calculate(AssessmentAnswers answers, ScoringContext context) =>
+        Calculate(AssessmentInput.From(answers, context));
+
     public static HealthRatingResult Calculate(AssessmentInput input)
     {
         var derived = DerivedMetricsCalculator.Calculate(input);
+        var context = new ScoringContext(input.Sex, input.Age);
 
         var scores = new Dictionary<string, int>
         {
@@ -84,10 +93,10 @@ public static class HealthRatingEngine
             [Keys.Weight] = 10, // weight's health signal is captured via BMI/WHtR/body fat
             [Keys.Waist] = 10,  // captured via WHtR/WHR
             [Keys.Hip] = 10,    // captured via WHR
-            [Keys.BodyFat] = BodyCompositionScorer.ScoreBodyFat(input.BodyFatPercent, input.Sex),
+            [Keys.BodyFat] = BodyCompositionScorer.ScoreBodyFat(input.BodyFatPercent, context),
             [Keys.Bmi] = BodyCompositionScorer.ScoreBmi(derived.Bmi),
             [Keys.WHtR] = BodyCompositionScorer.ScoreWHtR(derived.WHtR),
-            [Keys.WHR] = BodyCompositionScorer.ScoreWHR(derived.WHR, input.Sex),
+            [Keys.WHR] = BodyCompositionScorer.ScoreWHR(derived.WHR, context),
             [Keys.RestingHeartRate] = HeartRateScorer.ScoreResting(input.RestingHeartRateBpm),
             [Keys.HeartRateRecovery] = HeartRateScorer.ScoreRecovery(input.HeartRateRecoveryBpm),
             [Keys.BloodPressure] = BloodPressureScorer.Score(input.SystolicBpMmHg, input.DiastolicBpMmHg),

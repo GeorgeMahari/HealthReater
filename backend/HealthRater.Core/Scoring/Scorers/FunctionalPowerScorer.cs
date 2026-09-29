@@ -1,16 +1,17 @@
 using HealthRater.Core.Models;
+using HealthRater.Core.Scoring.References;
 
 namespace HealthRater.Core.Scoring.Scorers;
 
 public static class FunctionalPowerScorer
 {
+    /// <summary>
+    /// Total of push-ups, pull-ups and bodyweight squats, scored against the sex- and
+    /// age-specific "functionalPower" reference (an "excellent" norm total).
+    /// </summary>
     public static int Score(int pushUps, int pullUps, int bodyweightSquats, Sex sex, int age)
     {
         var total = pushUps + pullUps + bodyweightSquats;
-        var norm = ScoringConfig.FunctionalPower.GetExcellentNormTotalReps(sex, age);
-        if (norm <= 0) return 1;
-
-        var ratio = total / norm;
-        return ScoringConfig.Clamp1To10(ratio * 10);
+        return ScoringReferenceCatalog.Current.Score(HealthRatingEngine.Keys.FunctionalPower, total, new ScoringContext(sex, age));
     }
 }

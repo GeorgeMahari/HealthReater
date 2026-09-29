@@ -5,12 +5,12 @@ import { TotalRatingCard } from "../TotalRatingCard";
 import { Tooltip } from "../Tooltip";
 import { HealthSignalVisual } from "../visual/HealthSignalVisual";
 import { parameterGroups, parameterLabels, sectionIcons, stateMeta, termTooltips } from "../../data/uiMeta";
-import type { AssessmentInput, HealthRatingResult } from "../../types";
+import type { AssessmentAnswers, HealthRatingResult } from "../../types";
 
 interface ResultsViewProps {
   result: HealthRatingResult;
   /** The answers the result was calculated from (body fat, blood pressure, heart rate values). */
-  input: AssessmentInput;
+  input: AssessmentAnswers;
   eyebrow: ReactNode;
   title: ReactNode;
   /** Optional line under the title (saved note, historical date, …). */
@@ -240,7 +240,7 @@ function withUnit(value: number | string | "", unit: string): string {
   return value === "" || value === undefined ? "—" : `${value}${unit}`;
 }
 
-function bloodPressure(a: AssessmentInput): string {
+function bloodPressure(a: AssessmentAnswers): string {
   return a.systolicBpMmHg === "" || a.diastolicBpMmHg === ""
     ? "—"
     : `${a.systolicBpMmHg}/${a.diastolicBpMmHg}`;

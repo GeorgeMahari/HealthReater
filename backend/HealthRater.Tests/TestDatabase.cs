@@ -1,3 +1,5 @@
+using HealthRater.Core.Models;
+using HealthRater.Core.Profile;
 using HealthRater.Data;
 using HealthRater.Data.Entities;
 using Microsoft.Data.Sqlite;
@@ -30,7 +32,12 @@ public sealed class TestDatabase : IDisposable
     public HealthRaterDbContext NewContext() =>
         new SqliteHealthRaterDbContext(new DbContextOptionsBuilder<SqliteHealthRaterDbContext>().UseSqlite(_connection).Options);
 
-    public static User AddUser(HealthRaterDbContext db, string email)
+    /// <summary>
+    /// Adds a user with a complete profile: by default Male, aged 28 today (matching
+    /// SampleProfile.Healthy). Pass <paramref name="completeProfile"/> = false for a new account.
+    /// </summary>
+    public static User AddUser(
+        HealthRaterDbContext db, string email, Sex sex = Sex.Male, int ageToday = 28, bool completeProfile = true)
     {
         var now = DateTime.UtcNow;
         var user = new User
@@ -40,6 +47,8 @@ public sealed class TestDatabase : IDisposable
             PasswordHash = "test-hash",
             FirstName = "Test",
             LastName = "User",
+            Sex = completeProfile ? sex : null,
+            DateOfBirth = completeProfile ? ProfileRules.Today().AddYears(-ageToday).AddDays(-10) : null,
             IsActive = true,
             CreatedAt = now,
             UpdatedAt = now,

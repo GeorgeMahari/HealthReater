@@ -27,7 +27,7 @@ public static class PersistenceTests
             var input = SampleProfile.Healthy();
             var expected = HealthRatingEngine.Calculate(input);
 
-            var saved = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, input).GetAwaiter().GetResult();
+            var saved = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, input).GetAwaiter().GetResult().Assessment!;
 
             using var read = db.NewContext();
             var loaded = new AssessmentService(read).GetAsync(user.Id, saved.Id).GetAwaiter().GetResult()!;
@@ -61,11 +61,11 @@ public static class PersistenceTests
             var user = TestDatabase.AddUser(db.Context, "a@example.com");
             var service = new AssessmentService(db.Context);
 
-            var first = service.CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
+            var first = service.CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
             var worse = SampleProfile.Healthy();
             worse.AverageMood = 2;
             worse.EnergyLevel = 3;
-            var second = service.CreateCompletedAsync(user.Id, worse).GetAwaiter().GetResult();
+            var second = service.CreateCompletedAsync(user.Id, worse).GetAwaiter().GetResult().Assessment!;
 
             var list = service.ListCompletedAsync(user.Id).GetAwaiter().GetResult();
             Assert.Equal(2, list.Count, "Both assessments listed");
@@ -83,7 +83,7 @@ public static class PersistenceTests
             var alice = TestDatabase.AddUser(db.Context, "alice@example.com");
             var bob = TestDatabase.AddUser(db.Context, "bob@example.com");
             var service = new AssessmentService(db.Context);
-            var bobs = service.CreateCompletedAsync(bob.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
+            var bobs = service.CreateCompletedAsync(bob.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
 
             Assert.True(service.GetAsync(alice.Id, bobs.Id).GetAwaiter().GetResult() is null, "Alice cannot read Bob's");
             Assert.Equal(0, service.ListCompletedAsync(alice.Id).GetAwaiter().GetResult().Count, "Alice's list is empty");
@@ -96,7 +96,7 @@ public static class PersistenceTests
             using var db = TestDatabase.Create();
             var user = TestDatabase.AddUser(db.Context, "a@example.com");
             var service = new AssessmentService(db.Context);
-            var saved = service.CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
+            var saved = service.CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
             db.Context.ChangeTracker.Clear();
 
             Assert.True(service.DeleteAsync(user.Id, saved.Id).GetAwaiter().GetResult(), "Owner can delete");
@@ -123,7 +123,7 @@ public static class PersistenceTests
         {
             using var db = TestDatabase.Create();
             var user = TestDatabase.AddUser(db.Context, "a@example.com");
-            var saved = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
+            var saved = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
 
             // Simulate an assessment scored under an older configuration.
             db.Context.Database.ExecuteSqlRaw(
@@ -142,7 +142,7 @@ public static class PersistenceTests
         {
             using var db = TestDatabase.Create();
             var user = TestDatabase.AddUser(db.Context, "a@example.com");
-            var saved = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult();
+            var saved = new AssessmentService(db.Context).CreateCompletedAsync(user.Id, SampleProfile.Healthy()).GetAwaiter().GetResult().Assessment!;
             var threw = false;
             try
             {

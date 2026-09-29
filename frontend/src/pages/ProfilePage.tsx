@@ -17,7 +17,7 @@ import { HistoryList } from "../components/profile/HistoryList";
 import { ScoreHistory } from "../components/profile/ScoreHistory";
 import { ChangePasswordDialog, DeleteAccountDialog } from "../components/profile/SecurityDialogs";
 import type { AssessmentSummary } from "../types";
-import { formatMonthYear } from "../utils/dates";
+import { formatLongDate, formatMonthYear } from "../utils/dates";
 
 type HistoryState =
   | { status: "loading" }
@@ -33,7 +33,10 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [history, setHistory] = useState<HistoryState>({ status: "loading" });
-  const [dialog, setDialog] = useState<OpenDialog>(null);
+  // "Edit Profile" on the assessment page links here with { edit: true } to open the editor.
+  const [dialog, setDialog] = useState<OpenDialog>(() =>
+    (location.state as { edit?: boolean } | null)?.edit ? "edit" : null
+  );
   const [notice, setNotice] = useState<string | null>(null);
 
   const [reload, setReload] = useState(0);
@@ -102,6 +105,30 @@ export function ProfilePage() {
             <CalendarDays size={14} strokeWidth={2} aria-hidden="true" />
             Member since {formatMonthYear(new Date(user.createdAt).getFullYear(), new Date(user.createdAt).getMonth() + 1)}
           </p>
+
+          {user.profileCompleted ? (
+            <dl className="profile-facts" aria-label="Profile used for scoring">
+              <div>
+                <dt>Sex</dt>
+                <dd>{user.sex}</dd>
+              </div>
+              <div>
+                <dt>Date of birth</dt>
+                <dd>{formatLongDate(`${user.dateOfBirth}T12:00:00`)}</dd>
+              </div>
+              <div>
+                <dt>Age</dt>
+                <dd>{user.age}</dd>
+              </div>
+            </dl>
+          ) : (
+            <div className="profile-incomplete" role="status">
+              <p>Add your sex and date of birth to start assessments.</p>
+              <Link to="/complete-profile" state={{ from: "/profile" }} className="btn btn-primary btn-sm">
+                Complete profile
+              </Link>
+            </div>
+          )}
 
           <div className="profile-stats">
             <div>

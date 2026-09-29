@@ -1,14 +1,14 @@
 import type { CSSProperties } from "react";
 import { Check } from "lucide-react";
 import type { FieldDef } from "../data/sections";
-import type { AssessmentInput } from "../types";
+import type { AssessmentAnswers } from "../types";
 import { Select } from "./Select";
 import { Tooltip } from "./Tooltip";
 
 interface FieldInputProps {
   field: FieldDef;
-  value: AssessmentInput[keyof AssessmentInput];
-  onChange: (value: AssessmentInput[keyof AssessmentInput]) => void;
+  value: AssessmentAnswers[keyof AssessmentAnswers];
+  onChange: (value: AssessmentAnswers[keyof AssessmentAnswers]) => void;
   error?: string;
 }
 

@@ -9,6 +9,10 @@ namespace HealthRater.Core.Scoring;
 /// ACSM push-up norm tables) intentionally centralized here, as plain static fields, so
 /// they can be tuned without touching UI or controller code. Every field is grouped by
 /// the scorer that consumes it. See README "Scoring Methodology" for the full write-up.
+///
+/// Sex- and age-specific references (body fat, WHR, functional power) are NOT here: they
+/// live in Scoring/References/scoring-references.json so they can differ per sex and age
+/// group and be replaced with official tables without code changes.
 /// </summary>
 public static class ScoringConfig
 {
@@ -19,27 +23,11 @@ public static class ScoringConfig
         public const double PenaltyPerUnit = 0.5; // score lost per BMI unit away from center
     }
 
-    // ---------------- Body composition (body fat %) ----------------
-    public static class BodyComposition
-    {
-        public const double MaleIdealCenter = 15.0;
-        public const double FemaleIdealCenter = 23.0;
-        public const double PenaltyPerPercentPoint = 0.4;
-    }
-
     // ---------------- WHtR ----------------
     public static class Whtr
     {
         public const double IdealMax = 0.50; // below this: score 10
         public const double PenaltyPerUnitOver = 40.0;
-    }
-
-    // ---------------- WHR ----------------
-    public static class Whr
-    {
-        public const double MaleIdealMax = 0.90;
-        public const double FemaleIdealMax = 0.80;
-        public const double PenaltyPerUnitOver = 20.0;
     }
 
     // ---------------- Blood pressure ----------------
@@ -117,37 +105,6 @@ public static class ScoringConfig
     public static class Cooper
     {
         public const double MetersForMaxScore = 3000; // >=3000m -> score 10 (per business rule)
-    }
-
-    // ---------------- Functional power (push-ups + pull-ups + bodyweight squats) ----------------
-    // Provisional reps-total norm table considered "excellent" (score 10) by sex/age band.
-    // Ratio of actual reps to this norm (capped) maps linearly to 1-10.
-    public static class FunctionalPower
-    {
-        public static double GetExcellentNormTotalReps(Models.Sex sex, int age)
-        {
-            // Rough composite norm (pushups+pullups+squats) inspired by common
-            // age/sex-adjusted fitness norm tables. Provisional & configurable.
-            if (sex == Models.Sex.Male)
-            {
-                return age switch
-                {
-                    <= 29 => 150,
-                    <= 39 => 130,
-                    <= 49 => 110,
-                    <= 59 => 90,
-                    _ => 70
-                };
-            }
-            return age switch
-            {
-                <= 29 => 110,
-                <= 39 => 95,
-                <= 49 => 80,
-                <= 59 => 65,
-                _ => 50
-            };
-        }
     }
 
     // ---------------- Alcohol / tobacco / drugs ----------------

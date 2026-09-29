@@ -1,5 +1,7 @@
 using HealthRater.Core.Models;
+using HealthRater.Core.Profile;
 using HealthRater.Core.Scoring;
+using HealthRater.Core.Validation;
 using HealthRater.Data.Entities;
 using HealthRater.Data.Snapshots;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +20,9 @@ public record AssessmentSummary(
     double Immunity,
     double Longevity);
 
+/// <summary>Outcome of saving an assessment: the stored snapshot, or why it was refused.</summary>
+public record AssessmentCreateResult(HealthAssessment? Assessment, string? ProfileError, List<string>? ValidationErrors);
+
 /// <summary>
 /// All assessment reads and writes. Every method takes the authenticated user's id —
 /// taken from the server-side identity, never from the request — and every query is
@@ -32,14 +37,42 @@ public class AssessmentService
         _db = db;
     }
 
-    /// <summary>Scores the (already validated) input and stores it as a new completed assessment.</summary>
-    public async Task<HealthAssessment> CreateCompletedAsync(Guid userId, AssessmentInput input)
+    /// <summary>
+    /// The user's scoring context (sex + age calculated for <paramref name="today"/> from the
+    /// date of birth), read from the database; or an error when the profile is incomplete or
+    /// the age is out of range.
+    /// </summary>
+    public async Task<(ScoringContext? Context, DateOnly? DateOfBirth, string? Error)> GetScoringContextAsync(Guid userId, DateOnly today)
     {
+        var profile = await _db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.Sex, u.DateOfBirth })
+            .FirstOrDefaultAsync();
+        if (profile is null) return (null, null, "Account not found.");
+
+        var (context, error) = ProfileRules.ContextFor(profile.Sex, profile.DateOfBirth, today);
+        return (context, profile.DateOfBirth, error);
+    }
+
+    /// <summary>
+    /// Scores the answers with the user's own profile context and stores the result as a new
+    /// completed assessment. Sex and age always come from the profile, never from the caller.
+    /// <paramref name="today"/> is only overridable for tests.
+    /// </summary>
+    public async Task<AssessmentCreateResult> CreateCompletedAsync(Guid userId, AssessmentAnswers answers, DateOnly? today = null)
+    {
+        var (context, dateOfBirth, error) = await GetScoringContextAsync(userId, today ?? ProfileRules.Today());
+        if (context is null) return new AssessmentCreateResult(null, error, null);
+
+        var input = AssessmentInput.From(answers, context);
+        var validation = AssessmentValidator.Validate(input);
+        if (!validation.IsValid) return new AssessmentCreateResult(null, null, validation.Errors);
+
         var result = HealthRatingEngine.Calculate(input);
-        var assessment = AssessmentSnapshotBuilder.Build(userId, input, result, DateTime.UtcNow);
+        var assessment = AssessmentSnapshotBuilder.Build(userId, input, result, DateTime.UtcNow, dateOfBirth);
         _db.HealthAssessments.Add(assessment);
         await _db.SaveChangesAsync();
-        return assessment;
+        return new AssessmentCreateResult(assessment, null, null);
     }
 
     /// <summary>The user's completed assessments, newest first. Drafts are excluded.</summary>

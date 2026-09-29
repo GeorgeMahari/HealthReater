@@ -1,3 +1,5 @@
+using HealthRater.Core.Models;
+
 namespace HealthRater.Data.Entities;
 
 /// <summary>
@@ -23,7 +25,13 @@ public class User
     /// </summary>
     public DateTime? AvatarUpdatedAt { get; set; }
 
-    /// <summary>Optional; not collected yet. Assessments snapshot age separately.</summary>
+    /// <summary>Profile context for scoring. Required (with DateOfBirth) before an assessment.</summary>
+    public Sex? Sex { get; set; }
+
+    /// <summary>
+    /// Source of truth for age: the current age is always calculated from it (never stored).
+    /// Each assessment keeps its own snapshot, so changing this never alters past results.
+    /// </summary>
     public DateOnly? DateOfBirth { get; set; }
 
     public bool IsActive { get; set; } = true;
@@ -35,4 +43,7 @@ public class User
     public List<HealthAssessment> HealthAssessments { get; set; } = new();
 
     public string DisplayName => $"{FirstName} {LastName}".Trim();
+
+    /// <summary>True when both pieces of profile context needed for scoring are present.</summary>
+    public bool ProfileCompleted => Sex is not null && DateOfBirth is not null;
 }

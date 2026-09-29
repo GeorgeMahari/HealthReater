@@ -66,6 +66,12 @@ export interface AssessmentInput {
   hairHealth: number;
 }
 
+/**
+ * What the questionnaire collects. Sex and age are NOT asked: the API takes them from the
+ * signed-in user's profile (and ignores them if sent).
+ */
+export type AssessmentAnswers = Omit<AssessmentInput, "sex" | "age">;
+
 export interface DerivedMetrics {
   bmi: number;
   /** ASP.NET camel-cases the C# property "WHtR" to "wHtR". */
@@ -148,8 +154,10 @@ export interface AssessmentDetail extends HealthRatingResult {
   completedAt: string;
   scoringVersion: string;
   body: {
-    sex: string;
+    /** Profile context recorded when the assessment was completed (never recalculated). */
+    sexAtAssessment: string;
     ageAtAssessment: number;
+    dateOfBirthAtAssessment: string | null;
     height: number;
     heightUnit: string;
     weight: number;

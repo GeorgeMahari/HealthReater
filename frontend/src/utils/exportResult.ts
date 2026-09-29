@@ -1,7 +1,7 @@
-import type { AssessmentInput, HealthRatingResult } from "../types";
+import type { AssessmentAnswers, HealthRatingResult } from "../types";
 
 /** Client-side export of the answers and the API result as JSON. */
-export function saveResult(input: AssessmentInput, result: HealthRatingResult) {
+export function saveResult(input: AssessmentAnswers, result: HealthRatingResult) {
   const payload = { savedAt: new Date().toISOString(), assessment: input, result };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);

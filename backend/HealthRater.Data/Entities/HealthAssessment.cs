@@ -58,9 +58,13 @@ public class HealthAssessment
     public int BloodPressureSystolic { get; set; }
     public int BloodPressureDiastolic { get; set; }
 
-    // ---- Body snapshot ----
-    public string Sex { get; set; } = "";
+    // ---- Profile context snapshot (taken from the profile at completion; never recalculated) ----
+    public string SexAtAssessment { get; set; } = "";
     public int AgeAtAssessment { get; set; }
+    /// <summary>Date of birth on the profile when the assessment was completed (null for older records).</summary>
+    public DateOnly? DateOfBirthAtAssessment { get; set; }
+
+    // ---- Body snapshot ----
     public double Height { get; set; }
     public string HeightUnit { get; set; } = "cm";
     public double Weight { get; set; }

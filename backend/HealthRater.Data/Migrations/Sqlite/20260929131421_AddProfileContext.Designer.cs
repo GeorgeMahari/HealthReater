@@ -3,6 +3,7 @@ using System;
 using HealthRater.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HealthRater.Data.Migrations.Sqlite
 {
     [DbContext(typeof(SqliteHealthRaterDbContext))]
-    partial class SqliteHealthRaterDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929131421_AddProfileContext")]
+    partial class AddProfileContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.31");

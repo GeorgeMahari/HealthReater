@@ -104,6 +104,9 @@ namespace HealthRater.Data.Migrations.SqlServer
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateOnly?>("DateOfBirthAtAssessment")
+                        .HasColumnType("date");
+
                     b.Property<int>("HeartRateRecovery")
                         .HasColumnType("int");
 
@@ -138,7 +141,7 @@ namespace HealthRater.Data.Migrations.SqlServer
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
-                    b.Property<string>("Sex")
+                    b.Property<string>("SexAtAssessment")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -268,6 +271,10 @@ namespace HealthRater.Data.Migrations.SqlServer
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Sex")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");

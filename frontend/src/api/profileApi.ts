@@ -2,8 +2,13 @@ import type { User } from "./authApi";
 import { apiRequest } from "./http";
 
 export const profileApi = {
-  update: (firstName: string, lastName: string, email: string) =>
-    apiRequest<User>("/api/profile", { method: "PUT", json: { firstName, lastName, email } }),
+  /** Sex and date of birth are optional; when sent, both are validated (age 18–100). */
+  update: (
+    firstName: string,
+    lastName: string,
+    email: string,
+    profileContext?: { sex: "Male" | "Female"; dateOfBirth: string }
+  ) => apiRequest<User>("/api/profile", { method: "PUT", json: { firstName, lastName, email, ...profileContext } }),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     apiRequest<void>("/api/profile/password", { method: "PUT", json: { currentPassword, newPassword } }),

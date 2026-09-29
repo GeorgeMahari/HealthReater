@@ -1,9 +1,9 @@
-import type { AssessmentInput } from "../types";
+import type { AssessmentAnswers } from "../types";
 
 export type FieldKind = "select" | "number" | "scale";
 
 export interface FieldDef {
-  key: keyof AssessmentInput;
+  key: keyof AssessmentAnswers;
   label: string;
   kind: FieldKind;
   unit?: string;
@@ -26,18 +26,8 @@ export const sections: SectionDef[] = [
   {
     id: "basic-information",
     title: "Basic Information",
-    description: "The demographic and anthropometric basics every score is built on.",
+    description: "Height and weight. Your sex and age come from your profile, so they aren't asked here.",
     fields: [
-      {
-        key: "sex",
-        label: "Sex",
-        kind: "select",
-        options: [
-          { value: "Male", label: "Male" },
-          { value: "Female", label: "Female" },
-        ],
-      },
-      { key: "age", label: "Age", kind: "number", unit: "years", min: 18, max: 100 },
       { key: "heightCm", label: "Height", kind: "number", unit: "cm", min: 50, max: 250 },
       { key: "weightKg", label: "Weight", kind: "number", unit: "kg", min: 20, max: 400 },
     ],

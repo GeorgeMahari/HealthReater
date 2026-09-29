@@ -3,19 +3,15 @@ using System.ComponentModel.DataAnnotations;
 namespace HealthRater.Core.Models;
 
 /// <summary>
-/// Raw assessment input. Fields are grouped to mirror the 8 assessment UI sections.
+/// The answers a user gives in the assessment questionnaire — everything except sex and
+/// age. Those two are profile context (see <see cref="ScoringContext"/>): the API takes
+/// them from the signed-in user's profile, never from the request.
 /// BMI, WHtR and WHR are NOT collected here — they are derived server-side from
 /// height/weight/waist/hip (see DerivedMetricsCalculator).
 /// </summary>
-public class AssessmentInput
+public class AssessmentAnswers
 {
-    // ---------- 1. Basic Information ----------
-    [Required]
-    public Sex Sex { get; set; }
-
-    [Range(18, 100, ErrorMessage = "Age must be between 18 and 100.")]
-    public int Age { get; set; }
-
+    // ---------- 1. Basic Information (sex & age come from the profile) ----------
     [Range(50, 250, ErrorMessage = "Height must be between 50 and 250 cm.")]
     public double HeightCm { get; set; }
 
@@ -106,3 +102,31 @@ public class AssessmentInput
     [Range(1, 10)] public int SpinalHealth { get; set; }
     [Range(1, 10)] public int HairHealth { get; set; }
 }
+
+/// <summary>
+/// Everything the scoring engine needs: the questionnaire answers plus the profile context
+/// (sex and age at the time of the assessment). Sex and age are two of the 39 scored
+/// parameters, and also context for sex/age-aware parameters (body fat, WHR, functional power).
+/// </summary>
+public class AssessmentInput : AssessmentAnswers
+{
+    [Required]
+    public Sex Sex { get; set; }
+
+    [Range(18, 100, ErrorMessage = "Age must be between 18 and 100.")]
+    public int Age { get; set; }
+
+    /// <summary>Combines questionnaire answers with the profile context into one scoring input.</summary>
+    public static AssessmentInput From(AssessmentAnswers answers, ScoringContext context)
+    {
+        var input = new AssessmentInput { Sex = context.Sex, Age = context.Age };
+        foreach (var property in typeof(AssessmentAnswers).GetProperties())
+        {
+            property.SetValue(input, property.GetValue(answers));
+        }
+        return input;
+    }
+}
+
+/// <summary>Profile context used for scoring: the user's sex and their age on the day of the assessment.</summary>
+public record ScoringContext(Sex Sex, int Age);
