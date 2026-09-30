@@ -1,7 +1,7 @@
 # HealthRater
 
-Calculates a person's overall health rating from 39 parameters (score 1–10 each,
-summed into a **Total Health Rating out of 390**), plus four supporting health
+Calculates a person's overall health rating from 41 parameters (score 1–10 each,
+summed into a **Total Health Rating out of 410**), plus four supporting health
 states: **Energy, Strength & Stamina**, **Mental & Emotional**, **Immunity**, and
 **Longevity**.
 
@@ -20,7 +20,7 @@ healthrater/
 │   │   ├── Scoring/
 │   │   │   ├── ScoringConfig.cs      every threshold, centralized
 │   │   │   ├── DerivedMetricsCalculator.cs   BMI / WHtR / WHR
-│   │   │   ├── HealthRatingEngine.cs         orchestrates all 39 scorers + total
+│   │   │   ├── HealthRatingEngine.cs         orchestrates all 41 scorers + total
 │   │   │   ├── FourStateCalculator.cs        parameter → state mapping
 │   │   │   └── Scorers/          BloodPressureScorer, CooperScorer, HeartRateScorer,
 │   │   │                         HydrationScorer, FunctionalPowerScorer,
@@ -31,7 +31,7 @@ healthrater/
 │   │   ├── HealthRaterDbContext.cs   model + SQLite / SQL Server context subclasses
 │   │   ├── Migrations/Sqlite/    migrations for the SQLite provider (development default)
 │   │   ├── Migrations/SqlServer/ migrations for the SQL Server provider
-│   │   ├── Snapshots/            ParameterCatalog (39 params) + AssessmentSnapshotBuilder
+│   │   ├── Snapshots/            ParameterCatalog (41 params) + AssessmentSnapshotBuilder
 │   │   └── Services/             UserService, SessionService, AssessmentService
 │   ├── HealthRater.Api/         ASP.NET Core Web API — calculate, auth, assessments
 │   └── HealthRater.Tests/       dependency-free console test runner (see note below)
@@ -117,16 +117,23 @@ cd python && python3 -m pytest -q
 
 ## Scoring Methodology
 
-Every one of the 39 parameters produces an integer **1–10**. The **Total Health
-Rating is the literal sum** of those 39 scores (min 39, max 390) — never a weighted
+Every one of the 41 parameters produces an integer **1–10**. The **Total Health
+Rating is the literal sum** of those 41 scores (min 41, max 410) — never a weighted
 average, and the headline number is never rescaled to 0–100 (a percentage is shown
 alongside it).
+
+The parameter set has a **single source of truth**: `ParameterSet` in
+`HealthRater.Core/Scoring/ParameterSet.cs` (keys in official order, `Count`,
+`MaxScorePerParameter = 10`, `MaxTotalScore`), mirrored by
+`frontend/src/config/parameters.ts` (`TOTAL_PARAMETER_COUNT`, `MAX_SCORE_PER_PARAMETER`,
+`MAX_TOTAL_SCORE`) and `python/healthrater/scoring/keys.py`. The engine refuses to return a
+result whose keys don't match it.
 
 **Raw vs. derived:** BMI, WHtR and WHR are *not* collected from the user — they're
 computed from height/weight/waist/hip (`DerivedMetricsCalculator` / `derived.py`).
 
 **Provisional decision — raw anthropometric fields:** Sex, Height, Weight, Waist and
-Hip are each still one of the 39 numbered parameters (per the parameter list), but
+Hip are each still one of the numbered parameters (per the parameter list), but
 their health signal is *already fully captured* by the derived/composition scores
 (BMI, WHtR, WHR, Body Fat). Rather than double-penalize the same physical trait
 twice, this build scores those five raw fields at a flat baseline of 10 and lets
@@ -138,7 +145,9 @@ it's a judgment call, not a supplied rule — change it in `ScoringConfig` /
 - Blood pressure: 110/70 ≈ 10, ~165/95 ≈ 1 (linear interpolation per limb, averaged)
 - Hydration: ~33 ml/kg bodyweight/day is treated as the ideal; score falls off with distance from that ratio in either direction
 - Caffeine: 0 servings/day → 10, more → lower
-- Alcohol/tobacco/drugs: daily → 1, never → 10 (discrete frequency mapping)
+- Alcohol consumption, Tobacco / smoking and Recreational drug use: three independent
+  parameters, each daily → 1 … never → 10 (discrete frequency mapping, one tunable table
+  per substance in `ScoringConfig.Substance`)
 - Physical training: 4–6 sessions/week lands near 10; beyond ~7/week is capped (mild overtraining penalty) rather than continuing to increase
 - Cooper: ≥3,000 m in 12 minutes → 10
 - Functional power: push-ups + pull-ups + bodyweight squats, benchmarked against a provisional sex/age norm table
@@ -151,8 +160,8 @@ to retune without touching scoring/UI logic elsewhere.
 
 ### Profile context (sex & date of birth)
 
-Sex, age, height and weight are **parameters #1–#4 of the 39** (not extra parameters, so
-the maximum stays 39 × 10 = 390). They are not asked in the questionnaire: they come from
+Sex, age, height and weight are **parameters #1–#4 of the 41** (not extra parameters; they
+are included in the 41 × 10 = 410 maximum). They are not asked in the questionnaire: they come from
 the signed-in user's profile, and the first assessment step ("Basic Information") only
 shows them for the user to confirm or edit. Sex and age are also the **context** for the
 parameters whose references differ by sex and age; height and weight feed BMI, WHtR and
@@ -194,7 +203,7 @@ The shipped values reproduce the previous formulas exactly, so existing scores a
 
 Everything else that is sex/age related stays as before: the `age` parameter's own score
 (10 up to 30, gently lower per decade after) and the Four States grouping. Longevity uses
-the same 13 parameter scores as before (including age, body fat and WHR), so sex and age
+15 parameter scores (including age, body fat and WHR), so sex and age
 reach it only through those scores — there is **no mortality or life-expectancy model**.
 
 ### Four States (configurable grouping, not a clinical model)
@@ -204,6 +213,55 @@ the spec (parameters can and do contribute to multiple states — e.g. sleep qua
 counts toward both Energy and Mental & Emotional). Each state's raw score (sum of
 its member parameters) is also normalized to 0–100 for display. **This grouping is
 architectural, not a clinically validated predictive model.**
+
+| State | Parameters | Max raw |
+|---|---|---|
+| Energy, Strength & Stamina | 10 | 100 |
+| Mental & Emotional | 7 | 70 |
+| Immunity | 13 (includes alcohol, tobacco, drugs) | 130 |
+| Longevity | 15 (includes alcohol, tobacco, drugs) | 150 |
+
+Alcohol, tobacco and drugs each sit in the two states the former combined parameter
+belonged to: Immunity (toxin load on immune, gut, skin and dental health) and Longevity
+(long-term cardiovascular, cancer and mortality risk).
+
+### Body fat: measured or estimated
+
+The assessment asks "I know my body fat" / "I don't know". When it's unknown the request
+sends `"bodyFatPercent": null` and the backend estimates it through the replaceable
+`IBodyFatEstimator` abstraction (`HealthRater.Core/Scoring/BodyFat/`). The current
+implementation is `DeurenbergBodyFatEstimator` (Deurenberg, Weststrate & Seidell, Br J Nutr
+1991): **BF% = 1.20 × BMI + 0.23 × age − 10.8 × sex − 5.4** (sex: 1 male, 0 female), from
+the profile's height, weight, age and sex. The US Navy method wasn't used because it needs
+neck circumference, which isn't collected. Results that are NaN, infinite, negative or
+outside 2–75 % are refused (the user is asked for a measured value instead). The estimated
+value is scored by the same engine as a measured one, and the assessment stores
+`BodyFatSource` (`Measured`/`Estimated`) and `BodyFatEstimationMethod`. The UI marks it
+"Estimated" with: *"Body fat is estimated from available body measurements and demographic
+data. This is an estimate and may differ from direct body-composition measurements."*
+`GET /api/assessments/body-fat-estimate` returns the preview shown in the assessment.
+
+### Heart Rate Recovery (standardized)
+
+The user enters **peak heart rate** (end of exercise) and **heart rate exactly 60 s after
+stopping**; HRR = peak − after 60 s is calculated (read-only in the UI, never entered).
+Protocol shown in the assessment: warm up 3–5 min → exercise hard ~3 min → read peak HR →
+stop and start a timer → stay still in the same position → read HR at exactly 60 s → enter
+both (repeat the same way each time). Safety note: *"If you have a medical condition,
+symptoms, or have been advised to avoid strenuous exercise, do not perform this test
+without appropriate medical guidance."* Validation: peak 80–230 bpm, after-60 s 40–230 bpm,
+after-60 s ≤ peak, drop ≤ 100 bpm, peak > resting HR. `PeakHeartRate`,
+`HeartRateAfter60Seconds` and `HeartRateRecovery` are stored with the assessment.
+
+### Parameter-set versions and older assessments
+
+Each assessment stores `ParameterSetVersion`: `v2-41` for new ones, `v1-39` for
+assessments saved before alcohol, tobacco and drugs were split (set by the
+`ParameterSetV2BodyFatHrr` migration, which also marks their body fat as `Measured`).
+Saved assessments are never re-scored: a v1 assessment keeps its 39 parameter rows
+(including the combined "Alcohol / tobacco / drugs"), its total out of **390** and its
+four-state scores; history, calendar, comparison and the results page use each
+assessment's own maximum.
 
 ## API
 
@@ -220,13 +278,14 @@ Cookie: healthrater.auth=…
 
 {
   "waistCm": 82, "hipCm": 98, "bodyFatPercent": 16,
-  "restingHeartRateBpm": 58, "heartRateRecoveryBpm": 28,
+  "restingHeartRateBpm": 58, "peakHeartRateBpm": 170, "heartRateAfter60sBpm": 142,
   "systolicBpMmHg": 115, "diastolicBpMmHg": 74,
   "energyLevel": 8, "energyStability": 7, "averageSleepQuality": 8, "circadianHealth": 7,
   "averageMood": 8, "moodStability": 7, "socialLife": 8, "jobSatisfaction": 7, "homeFamilySatisfaction": 9,
   "dailyWaterIntakeLiters": 2.6, "digestionAndEvacuation": 8, "immuneHealth": 8,
   "caffeineServingsPerDay": 1, "junkFoodServingsPerWeek": 2, "overeatingEpisodesPerWeek": 1,
-  "alcoholTobaccoDrugsFrequency": "Rarely", "vegetablesFiberServingsPerDay": 4,
+  "alcoholFrequency": "Rarely", "tobaccoFrequency": "Rarely", "drugsFrequency": "Rarely",
+  "vegetablesFiberServingsPerDay": 4,
   "dailyStepsNeat": 9000, "trainingSessionsPerWeek": 5,
   "pushUps": 40, "pullUps": 12, "bodyweightSquats": 50, "cooperDistanceMeters": 2800,
   "skinHealth": 8, "jawSkullHealth": 9, "dentalHealth": 8, "spinalHealth": 7, "hairHealth": 8
@@ -236,17 +295,21 @@ Cookie: healthrater.auth=…
 Returns:
 ```json
 {
-  "totalHealthRating": 339,
-  "maxHealthRating": 390,
-  "percentage": 86.92,
-  "parameterScores": { "...": "39 keys, 1-10 each" },
+  "totalHealthRating": 355,
+  "maxHealthRating": 410,
+  "parameterCount": 41,
+  "parameterSetVersion": "v2-41",
+  "percentage": 86.59,
+  "parameterScores": { "...": "41 keys, 1-10 each" },
   "fourStates": {
     "energyStrengthStamina": { "rawScore": 83, "maxRawScore": 100, "normalizedScore": 83 },
     "mentalEmotional": { "rawScore": 54, "maxRawScore": 70, "normalizedScore": 77.14 },
-    "immunity": { "rawScore": 93, "maxRawScore": 110, "normalizedScore": 84.55 },
-    "longevity": { "rawScore": 121, "maxRawScore": 130, "normalizedScore": 93.08 }
+    "immunity": { "rawScore": 109, "maxRawScore": 130, "normalizedScore": 83.85 },
+    "longevity": { "rawScore": 137, "maxRawScore": 150, "normalizedScore": 91.33 }
   },
-  "derivedMetrics": { "bmi": 24.07, "whtr": 0.456, "whr": 0.837 }
+  "derivedMetrics": { "bmi": 24.07, "whtr": 0.456, "whr": 0.837 },
+  "bodyFat": { "percent": 16, "source": "Measured", "estimationMethod": null },
+  "heartRateRecovery": { "peakHeartRateBpm": 170, "heartRateAfter60sBpm": 142, "recoveryBpm": 28 }
 }
 ```
 Invalid input (e.g. systolic ≤ diastolic) returns `400` with an `errors` array/object;
@@ -292,8 +355,9 @@ owner comes from the session, never from the request. Someone else's id returns 
 |---|---|
 | `POST /api/assessments` | Body: `AssessmentInput`. Validates, scores, stores. `201` + full snapshot |
 | `GET /api/assessments` | Completed assessments, newest first — summary only (no parameters) |
-| `GET /api/assessments/{id}` | Full snapshot: totals, four states, derived metrics, body & cardiovascular snapshot, all 39 parameters (raw value, unit, score) and the original input |
+| `GET /api/assessments/{id}` | Full snapshot: totals, four states, derived metrics, body & cardiovascular snapshot, all stored parameters (41, or 39 for v1 assessments — raw value, unit, score), `parameterSetVersion`, `parameterCount`, body-fat source and HRR readings, and the original input |
 | `GET /api/assessments/calendar?year=2026&month=9&timeZone=Europe/Bucharest` | Lightweight entries for one month; `date` is the local day in the given IANA time zone (default UTC) |
+| `GET /api/assessments/body-fat-estimate` | Body-fat estimate for "I don't know" from your profile (`bodyFatPercent`, `method`, `methodName`, `disclaimer`); `409` incomplete profile, `422` no plausible estimate |
 | `DELETE /api/assessments/{id}` | `204`, or `404` if it isn't yours |
 
 **Historical stability.** Each assessment is an immutable snapshot: inputs, derived
@@ -398,7 +462,9 @@ Development environment.
 ## Validation
 
 Enforced in `AssessmentValidator` (C#) / `validation.py` (Python):
-age 18–100, all 1–10 fields, body fat 0–100%, positive anthropometric values, valid
+age 18–100, all 1–10 fields, body fat 2–75% (or estimated when unknown), HRR readings
+(peak 80–230, after 60 s 40–230, after ≤ peak, drop ≤ 100, peak > resting HR), each of the
+three substance answers required, positive anthropometric values, valid
 blood pressure (systolic > diastolic), valid sex, valid (non-negative) Cooper
 distance — plus range checks on every other numeric field. Errors are returned as a
 flat list of human-readable messages; the .NET API also auto-returns 400 for
@@ -410,7 +476,7 @@ The project was started in a sandbox without NuGet access, so `HealthRater.Tests
 small dependency-free console runner (`Framework/TestRunner.cs`, xUnit-like `Assert.*`).
 NuGet is now enabled in `backend/NuGet.Config` (EF Core and Swashbuckle come from it), so
 moving the tests to xUnit is possible whenever wanted. The suite has
-76 tests, including persistence, profile and profile-context tests that apply the real
+96 tests (including the parameter-set v2, body-fat estimation, HRR and legacy 39/390 tests), including persistence, profile and profile-context tests that apply the real
 SQLite migrations to a private database per test.
 
 ## What's been executed (not just written)
@@ -421,10 +487,10 @@ SQLite migrations to a private database per test.
   use, physical training, total health rating bounds/sum, four states, validation).
 - `python3 -m pytest -q` — **40/40 passed** (mirrors the same categories).
 - Backend API run live on `localhost:5080`; POSTed a real sample profile and a couple
-  of invalid ones — got back correct 339/390 (86.92%) results and correct 400
+  of invalid ones — got back correct results (currently 355/410, 86.59%) and correct 400
   validation errors.
 - **Cross-language parity verified**: the same sample profile through both the .NET
-  API and `python -m healthrater.cli` produces identical results (339/390, 86.92%,
+  API and `python -m healthrater.cli` produces identical results (355/410, 86.59%,
   same four-state scores, same BMI/WHtR/WHR).
 - `npm run build` on the frontend — **built clean**, 0 TypeScript errors.
 - Frontend dev server (`localhost:5173`) and backend API (`localhost:5080`) both

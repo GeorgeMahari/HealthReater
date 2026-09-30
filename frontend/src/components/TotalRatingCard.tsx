@@ -1,8 +1,9 @@
 import { useCountUp } from "../hooks/useCountUp";
 import { ScoreRing } from "./visual/ScoreRing";
+import { MAX_TOTAL_SCORE } from "../config/parameters";
 
 interface TotalRatingCardProps {
-  /** Omit on the Home page — the card then shows the "X / 390" placeholder. */
+  /** Omit on the Home page — the card then shows the "X / 410" placeholder. */
   total?: number;
   max?: number;
   percentage?: number;
@@ -29,7 +30,7 @@ function AnimatedTotal({ total, max, percentage }: { total: number; max: number;
  */
 export function TotalRatingCard({
   total,
-  max = 390,
+  max = MAX_TOTAL_SCORE,
   percentage,
   children,
   className = "",

@@ -31,9 +31,39 @@ public class FourStates
 public class HealthRatingResult
 {
     public int TotalHealthRating { get; set; }
-    public int MaxHealthRating { get; set; } = 390;
+    /// <summary>ParameterSet.MaxTotalScore for the parameter set used (410 for v2).</summary>
+    public int MaxHealthRating { get; set; }
+
+    /// <summary>Number of scored parameters (ParameterSet.Count).</summary>
+    public int ParameterCount { get; set; }
+
+    public string ParameterSetVersion { get; set; } = string.Empty;
     public double Percentage { get; set; }
     public Dictionary<string, int> ParameterScores { get; set; } = new();
     public FourStates FourStates { get; set; } = new();
     public DerivedMetrics DerivedMetrics { get; set; } = new();
+
+    /// <summary>The body-fat value that was scored and whether it was measured or estimated.</summary>
+    public BodyFatInfo BodyFat { get; set; } = new();
+
+    /// <summary>The Heart Rate Recovery measurement that was scored.</summary>
+    public HeartRateRecoveryInfo HeartRateRecovery { get; set; } = new();
+}
+
+public class BodyFatInfo
+{
+    public double Percent { get; set; }
+    public BodyFatSource Source { get; set; }
+
+    /// <summary>Estimation method id (e.g. "Deurenberg1991"); null when measured.</summary>
+    public string? EstimationMethod { get; set; }
+}
+
+public class HeartRateRecoveryInfo
+{
+    public int PeakHeartRateBpm { get; set; }
+    public int HeartRateAfter60sBpm { get; set; }
+
+    /// <summary>Peak minus after 60 s.</summary>
+    public int RecoveryBpm { get; set; }
 }

@@ -114,8 +114,16 @@ def score_physical_training(sessions_per_week: float) -> int:
     return cfg.clamp_1_to_10(sessions_per_week * cfg.PhysicalTraining.POINTS_PER_SESSION)
 
 
-def score_substance(frequency: SubstanceFrequency) -> int:
-    return cfg.SUBSTANCE_SCORE_BY_FREQUENCY[frequency]
+def score_alcohol(frequency: SubstanceFrequency) -> int:
+    return cfg.ALCOHOL_SCORE_BY_FREQUENCY[frequency]
+
+
+def score_tobacco(frequency: SubstanceFrequency) -> int:
+    return cfg.TOBACCO_SCORE_BY_FREQUENCY[frequency]
+
+
+def score_drugs(frequency: SubstanceFrequency) -> int:
+    return cfg.DRUGS_SCORE_BY_FREQUENCY[frequency]
 
 
 def score_cooper(distance_meters: int) -> int:

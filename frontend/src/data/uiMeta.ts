@@ -24,7 +24,7 @@ export interface StateMeta {
   icon: LucideIcon;
   /** Visual identity modifier (see .tone-* in CSS). */
   tone: "energy" | "mental" | "immunity" | "longevity";
-  /** How many of the 39 parameters feed this state (matches the backend grouping). */
+  /** How many of the scored parameters feed this state (matches the backend FourStateCalculator). */
   parameterCount: number;
   tooltip?: string;
 }
@@ -52,10 +52,10 @@ export const stateMeta: StateMeta[] = [
   {
     key: "immunity",
     title: "Immunity",
-    desc: "Hydration, digestion, diet quality and substance use.",
+    desc: "Hydration, digestion, diet quality, alcohol, tobacco and drugs.",
     icon: Shield,
     tone: "immunity",
-    parameterCount: 11,
+    parameterCount: 13,
   },
   {
     key: "longevity",
@@ -63,7 +63,7 @@ export const stateMeta: StateMeta[] = [
     desc: "Body composition, blood pressure, heart health and lifestyle risk factors.",
     icon: Hourglass,
     tone: "longevity",
-    parameterCount: 13,
+    parameterCount: 15,
     tooltip: LONGEVITY_TOOLTIP,
   },
 ];
@@ -94,7 +94,9 @@ export const parameterGroups: { sectionId: string; title: string; keys: string[]
   {
     sectionId: "lifestyle",
     title: "Lifestyle",
-    keys: ["hydration", "digestion", "immuneHealth", "caffeine", "junkFood", "overeating", "substanceUse", "vegetablesFiber"],
+    keys: ["hydration", "digestion", "immuneHealth", "caffeine", "junkFood", "overeating", "alcohol", "tobacco", "drugs",
+      // Legacy (v1): assessments saved before the split keep one combined parameter.
+      "substanceUse", "vegetablesFiber"],
   },
   { sectionId: "physical-performance", title: "Physical Performance", keys: ["neat", "physicalTraining", "functionalPower", "cooper"] },
   {
@@ -112,20 +114,46 @@ export const parameterLabels: Record<string, string> = {
   neat: "NEAT",
   cooper: "Cooper run",
   substanceUse: "Alcohol / tobacco / drugs",
+  alcohol: "Alcohol consumption",
+  tobacco: "Tobacco / smoking",
+  drugs: "Recreational drug use",
   jawSkullHealth: "Jaw & skull health",
   homeFamilySatisfaction: "Home & family",
   vegetablesFiber: "Vegetables & fiber",
   restingHeartRate: "Resting heart rate",
-  heartRateRecovery: "Heart-rate recovery",
+  heartRateRecovery: "Heart Rate Recovery (HRR)",
 };
 
+/** Shown next to an estimated body-fat value (assessment step and results). */
+export const BODY_FAT_ESTIMATE_TOOLTIP =
+  "Body fat is estimated from available body measurements and demographic data. This is an estimate and may differ from direct body-composition measurements.";
+
+/** Standardized Heart Rate Recovery protocol shown in the assessment. */
+export const HRR_PROTOCOL_STEPS = [
+  "Warm up for 3–5 minutes at an easy pace.",
+  "Exercise hard for about 3 minutes (fast running, stair climbing, cycling or step-ups) until breathing is heavy and talking is difficult.",
+  "At the very end of the effort, read your heart rate on a chest strap, watch or pulse monitor: this is your peak heart rate.",
+  "Stop exercising and start a timer immediately.",
+  "Stay still in the same position (standing or sitting). Don't walk around or cool down.",
+  "Read your heart rate again at exactly 60 seconds: this is your heart rate after 60 seconds.",
+  "Enter both values. HealthRater calculates HRR = peak heart rate − heart rate after 60 seconds. Repeat the test the same way each time so results are comparable.",
+];
+
+export const HRR_SAFETY_NOTE =
+  "If you have a medical condition, symptoms, or have been advised to avoid strenuous exercise, do not perform this test without appropriate medical guidance.";
+
 export const termTooltips: Record<string, string> = {
-  bmi: "Body Mass Index — weight (kg) divided by height (m) squared. Calculated automatically.",
-  whtr: "Waist-to-Height Ratio — waist ÷ height. A simple marker of central body fat; around 0.5 or below is generally favourable.",
-  whr: "Waist-to-Hip Ratio — waist ÷ hip. Another view of where body fat is stored.",
+  bmi: "BMI (Body Mass Index) is your weight relative to your height (kg ÷ m²). It's a quick screening metric, but it doesn't distinguish muscle from fat. Informational only, not a diagnosis.",
+  whtr: "WHtR (Waist-to-Height Ratio) compares your waist circumference with your height. It's an indicator of central (abdominal) fat. Informational only, not a diagnosis.",
+  whr: "WHR (Waist-to-Hip Ratio) compares your waist circumference with your hip circumference. It describes how your body fat is distributed. Informational only, not a diagnosis.",
   neat: "Non-Exercise Activity Thermogenesis: movement from daily life (walking, chores, stairs), tracked here as daily steps.",
   functionalPower: "Push-ups, pull-ups and bodyweight squats combined into one score, benchmarked against sex- and age-adjusted norms.",
-  heartRateRecovery: "How many bpm your heart rate falls in the first minute after intense exercise. A bigger drop means a fitter heart.",
+  heartRateRecovery:
+    "Heart Rate Recovery (HRR) is the decrease in heart rate during the first 60 seconds after exercise stops. HealthRater uses the difference between peak heart rate and heart rate measured exactly 60 seconds later.",
+  alcohol: "How often you drink alcohol. Scored independently of tobacco and drugs.",
+  tobacco: "How often you smoke or use tobacco or nicotine products. Scored independently of alcohol and drugs.",
+  drugs: "How often you use recreational or non-prescribed drugs. Scored independently of alcohol and tobacco.",
+  substanceUse: "Recorded before alcohol, tobacco and drugs became three separate parameters (earlier 39-parameter assessments).",
   circadianHealth: "How regular your sleep/wake, meal and light-exposure timing is across the day.",
   digestion: "How regular and comfortable your digestion and bowel movements are.",
 };

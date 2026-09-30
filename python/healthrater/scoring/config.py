@@ -112,14 +112,21 @@ class FunctionalPower:
             return 50
 
 
-SUBSTANCE_SCORE_BY_FREQUENCY: dict[SubstanceFrequency, int] = {
-    SubstanceFrequency.DAILY: 1,
-    SubstanceFrequency.SEVERAL_TIMES_PER_WEEK: 3,
-    SubstanceFrequency.WEEKLY: 5,
-    SubstanceFrequency.MONTHLY: 7,
-    SubstanceFrequency.RARELY: 8,
-    SubstanceFrequency.NEVER: 10,
-}
+def _default_substance_scale() -> dict[SubstanceFrequency, int]:
+    return {
+        SubstanceFrequency.DAILY: 1,
+        SubstanceFrequency.SEVERAL_TIMES_PER_WEEK: 3,
+        SubstanceFrequency.WEEKLY: 5,
+        SubstanceFrequency.MONTHLY: 7,
+        SubstanceFrequency.RARELY: 8,
+        SubstanceFrequency.NEVER: 10,
+    }
+
+
+# Alcohol, tobacco and drugs are scored independently, each with its own (tunable) table.
+ALCOHOL_SCORE_BY_FREQUENCY = _default_substance_scale()
+TOBACCO_SCORE_BY_FREQUENCY = _default_substance_scale()
+DRUGS_SCORE_BY_FREQUENCY = _default_substance_scale()
 
 
 def clamp_1_to_10(value: float) -> int:

@@ -9,9 +9,9 @@ public static class HealthRatingEngine
     /// Identifies the scoring rules in ScoringConfig. Stored with every saved assessment;
     /// bump it whenever a threshold or formula changes so historical results stay traceable.
     /// </summary>
-    public const string ScoringVersion = "2026.09-provisional";
+    public const string ScoringVersion = "2026.10-provisional";
 
-    // Canonical parameter keys, in the official 1-39 order.
+    // Canonical parameter keys. The official set and order live in ParameterSet.
     public static class Keys
     {
         public const string Sex = "sex";
@@ -42,6 +42,14 @@ public static class HealthRatingEngine
         public const string Caffeine = "caffeine";
         public const string JunkFood = "junkFood";
         public const string Overeating = "overeating";
+        public const string Alcohol = "alcohol";
+        public const string Tobacco = "tobacco";
+        public const string Drugs = "drugs";
+
+        /// <summary>
+        /// Legacy (v1, 39-parameter) combined "alcohol / tobacco / drugs" parameter. No longer
+        /// scored; kept so assessments saved before the split can still be labelled.
+        /// </summary>
         public const string SubstanceUse = "substanceUse";
         public const string VegetablesFiber = "vegetablesFiber";
         public const string Neat = "neat";
@@ -57,9 +65,9 @@ public static class HealthRatingEngine
 
     /// <summary>
     /// Sex and Age are demographic/context parameters, not lifestyle scores in the usual
-    /// sense. Per the spec every one of the 39 parameters must ultimately produce 1-10, so
-    /// both are still scored (age via a simple healthy-range heuristic, sex neutrally),
-    /// and both count toward the 390-point total.
+    /// sense. Per the spec every parameter must ultimately produce 1-10, so both are still
+    /// scored (age via a simple healthy-range heuristic, sex neutrally), and both count
+    /// toward the total.
     /// </summary>
     private static int ScoreSex(Sex sex) => 10; // sex itself carries no inherent health penalty
 
@@ -74,7 +82,7 @@ public static class HealthRatingEngine
 
     /// <summary>
     /// Scores questionnaire answers for a person with the given profile data. Sex, age, height
-    /// and weight are four of the 39 parameters; sex and age also select the sex/age-specific
+    /// and weight are four of the scored parameters; sex and age also select the sex/age-specific
     /// references used for body fat, WHR and functional power (see ScoringReferenceCatalog).
     /// </summary>
     public static HealthRatingResult Calculate(AssessmentAnswers answers, ProfileSnapshot profile) =>
@@ -82,6 +90,9 @@ public static class HealthRatingEngine
 
     public static HealthRatingResult Calculate(AssessmentInput input)
     {
+        input.ResolveBodyFat();
+        var bodyFat = input.BodyFatPercent
+            ?? throw new InvalidOperationException(input.BodyFatEstimationError ?? "Body fat is missing; validate the input first.");
         var derived = DerivedMetricsCalculator.Calculate(input);
         var context = new ScoringContext(input.Sex, input.Age);
 
@@ -93,7 +104,7 @@ public static class HealthRatingEngine
             [Keys.Weight] = 10, // weight's health signal is captured via BMI/WHtR/body fat
             [Keys.Waist] = 10,  // captured via WHtR/WHR
             [Keys.Hip] = 10,    // captured via WHR
-            [Keys.BodyFat] = BodyCompositionScorer.ScoreBodyFat(input.BodyFatPercent, context),
+            [Keys.BodyFat] = BodyCompositionScorer.ScoreBodyFat(bodyFat, context),
             [Keys.Bmi] = BodyCompositionScorer.ScoreBmi(derived.Bmi),
             [Keys.WHtR] = BodyCompositionScorer.ScoreWHtR(derived.WHtR),
             [Keys.WHR] = BodyCompositionScorer.ScoreWHR(derived.WHR, context),
@@ -115,7 +126,9 @@ public static class HealthRatingEngine
             [Keys.Caffeine] = CaffeineScorer.Score(input.CaffeineServingsPerDay),
             [Keys.JunkFood] = JunkFoodScorer.Score(input.JunkFoodServingsPerWeek),
             [Keys.Overeating] = OvereatingScorer.Score(input.OvereatingEpisodesPerWeek),
-            [Keys.SubstanceUse] = SubstanceScorer.Score(input.AlcoholTobaccoDrugsFrequency),
+            [Keys.Alcohol] = SubstanceScorer.ScoreAlcohol(Required(input.AlcoholFrequency, "Alcohol consumption")),
+            [Keys.Tobacco] = SubstanceScorer.ScoreTobacco(Required(input.TobaccoFrequency, "Tobacco / smoking")),
+            [Keys.Drugs] = SubstanceScorer.ScoreDrugs(Required(input.DrugsFrequency, "Recreational drug use")),
             [Keys.VegetablesFiber] = VegetablesFiberScorer.Score(input.VegetablesFiberServingsPerDay),
             [Keys.Neat] = NeatScorer.Score(input.DailyStepsNeat),
             [Keys.PhysicalTraining] = PhysicalTrainingScorer.Score(input.TrainingSessionsPerWeek),
@@ -129,17 +142,39 @@ public static class HealthRatingEngine
             [Keys.HairHealth] = input.HairHealth,
         };
 
+        if (scores.Count != ParameterSet.Count || !ParameterSet.Keys.All(scores.ContainsKey))
+        {
+            throw new InvalidOperationException("The engine's scores don't match ParameterSet.");
+        }
+
         var total = scores.Values.Sum();
         var fourStates = FourStateCalculator.Calculate(scores);
 
         return new HealthRatingResult
         {
             TotalHealthRating = total,
-            MaxHealthRating = 390,
-            Percentage = Math.Round((total / 390.0) * 100, 2),
+            MaxHealthRating = ParameterSet.MaxTotalScore,
+            ParameterCount = ParameterSet.Count,
+            ParameterSetVersion = ParameterSet.Version,
+            Percentage = Math.Round((total / (double)ParameterSet.MaxTotalScore) * 100, 2),
             ParameterScores = scores,
             FourStates = fourStates,
             DerivedMetrics = derived,
+            BodyFat = new BodyFatInfo
+            {
+                Percent = bodyFat,
+                Source = input.BodyFatSource,
+                EstimationMethod = input.BodyFatEstimationMethod,
+            },
+            HeartRateRecovery = new HeartRateRecoveryInfo
+            {
+                PeakHeartRateBpm = input.PeakHeartRateBpm,
+                HeartRateAfter60sBpm = input.HeartRateAfter60sBpm,
+                RecoveryBpm = input.HeartRateRecoveryBpm,
+            },
         };
     }
+
+    private static SubstanceFrequency Required(SubstanceFrequency? value, string name) =>
+        value ?? throw new InvalidOperationException($"{name} is missing; validate the input first.");
 }

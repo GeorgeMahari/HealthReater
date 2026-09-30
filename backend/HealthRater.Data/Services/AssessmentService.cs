@@ -1,6 +1,7 @@
 using HealthRater.Core.Models;
 using HealthRater.Core.Profile;
 using HealthRater.Core.Scoring;
+using HealthRater.Core.Scoring.BodyFat;
 using HealthRater.Core.Validation;
 using HealthRater.Data.Entities;
 using HealthRater.Data.Snapshots;
@@ -55,6 +56,22 @@ public class AssessmentService
     }
 
     /// <summary>
+    /// Preview of the body-fat estimate HealthRater would use if the user doesn't know their
+    /// body fat, from their own profile data (and the waist/hip they've entered so far, for
+    /// estimators that use them). Same calculation as on submission.
+    /// </summary>
+    public async Task<(BodyFatEstimate? Estimate, string? ProfileError, string? EstimateError)> EstimateBodyFatAsync(
+        Guid userId, double? waistCm, double? hipCm, DateOnly? today = null)
+    {
+        var (profile, _, error) = await GetScoringContextAsync(userId, today ?? ProfileRules.Today());
+        if (profile is null) return (null, error, null);
+
+        var input = AssessmentInput.From(new AssessmentAnswers { WaistCm = waistCm ?? 0, HipCm = hipCm ?? 0 }, profile);
+        var (estimate, estimateError) = BodyFatEstimation.TryEstimate(BodyFatEstimation.InputFor(input));
+        return (estimate, null, estimateError);
+    }
+
+    /// <summary>
     /// Scores the answers with the user's own profile data and stores the result as a new
     /// completed assessment. Sex, age, height and weight always come from the profile, never
     /// from the caller.
@@ -91,7 +108,7 @@ public class AssessmentService
             .Select(ToSummary)
             .ToListAsync();
 
-    /// <summary>Full snapshot including all 39 parameters, or null if it doesn't exist or isn't this user's.</summary>
+    /// <summary>Full snapshot including every stored parameter (41, or 39 for v1 assessments), or null if it doesn't exist or isn't this user's.</summary>
     public Task<HealthAssessment?> GetAsync(Guid userId, Guid assessmentId) =>
         _db.HealthAssessments
             .AsNoTracking()

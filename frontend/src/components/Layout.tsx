@@ -3,6 +3,7 @@ import { ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { HealthBackground, type BackgroundIntensity } from "./visual/HealthBackground";
 import { UserMenu } from "./UserMenu";
+import { TOTAL_PARAMETER_COUNT } from "../config/parameters";
 
 // The questionnaire gets a calmer backdrop so the form stays the focus.
 function intensityFor(pathname: string): BackgroundIntensity {
@@ -37,7 +38,7 @@ export function Layout() {
               <path d="M6 17h5l2.5-5 4 10 2.5-5H26" />
             </svg>
             <span className="brand-mark">HealthRater</span>
-            <span className="brand-tag">39-parameter health assessment</span>
+            <span className="brand-tag">{TOTAL_PARAMETER_COUNT}-parameter health assessment</span>
           </Link>
           <nav className="nav-links" aria-label="Main">
             <Link

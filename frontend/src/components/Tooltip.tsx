@@ -16,9 +16,13 @@ export function Tooltip({ text, label = "More information" }: TooltipProps) {
   const [open, setOpen] = useState(false);
   const [align, setAlign] = useState<Align>("center");
   const wrapRef = useRef<HTMLSpanElement>(null);
+  // A tap fires mouseenter/focus (which open the bubble) right before click; without this
+  // the click would immediately toggle it closed again on touch screens.
+  const openedAt = useRef(0);
   const id = useId();
 
   const show = () => {
+    if (!open) openedAt.current = Date.now();
     const rect = wrapRef.current?.getBoundingClientRect();
     if (rect) {
       const half = 130;
@@ -61,8 +65,8 @@ export function Tooltip({ text, label = "More information" }: TooltipProps) {
         onBlur={() => setOpen(false)}
         onClick={(e) => {
           e.preventDefault();
-          if (open) setOpen(false);
-          else show();
+          if (!open) show();
+          else if (Date.now() - openedAt.current > 400) setOpen(false);
         }}
       >
         i

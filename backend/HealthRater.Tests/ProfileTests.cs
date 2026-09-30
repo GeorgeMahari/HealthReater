@@ -96,7 +96,7 @@ public static class ProfileTests
             using var read = db.NewContext();
             Assert.Equal(1, read.Users.Count(), "Only the other user remains");
             Assert.Equal(1, read.HealthAssessments.Count(), "Only the other user's assessment remains");
-            Assert.Equal(39, read.AssessmentParameterScores.Count(), "Its 39 parameters remain");
+            Assert.Equal(41, read.AssessmentParameterScores.Count(), "Its 41 parameters remain");
             Assert.Equal(0, read.RefreshTokens.Count(), "Sessions removed");
             Assert.Equal(0, read.UserAvatars.Count(), "Avatar removed");
         }),

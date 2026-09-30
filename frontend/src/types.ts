@@ -1,5 +1,10 @@
 export type Sex = "Male" | "Female";
 
+export type BodyFatSource = "Measured" | "Estimated";
+
+/** "known" = the user enters a measured value; "unknown" = HealthRater estimates it. */
+export type BodyFatMode = "known" | "unknown";
+
 export type SubstanceFrequency =
   | "Daily"
   | "SeveralTimesPerWeek"
@@ -19,11 +24,17 @@ export interface AssessmentInput {
   // Body Metrics
   waistCm: number | "";
   hipCm: number | "";
+  /** UI choice, not sent to the API: whether the user knows their body fat. */
+  bodyFatMode: BodyFatMode | "";
+  /** Sent as null when bodyFatMode is "unknown" (the API then estimates it). */
   bodyFatPercent: number | "";
 
   // Cardiovascular
   restingHeartRateBpm: number | "";
-  heartRateRecoveryBpm: number | "";
+  /** Standardized HRR protocol: peak HR at the end of exercise… */
+  peakHeartRateBpm: number | "";
+  /** …and HR exactly 60 s after stopping. HRR = peak − after 60 s (calculated, never entered). */
+  heartRateAfter60sBpm: number | "";
   systolicBpMmHg: number | "";
   diastolicBpMmHg: number | "";
 
@@ -47,7 +58,9 @@ export interface AssessmentInput {
   caffeineServingsPerDay: number | "";
   junkFoodServingsPerWeek: number | "";
   overeatingEpisodesPerWeek: number | "";
-  alcoholTobaccoDrugsFrequency: SubstanceFrequency | "";
+  alcoholFrequency: SubstanceFrequency | "";
+  tobaccoFrequency: SubstanceFrequency | "";
+  drugsFrequency: SubstanceFrequency | "";
   vegetablesFiberServingsPerDay: number | "";
 
   // Physical Performance
@@ -71,6 +84,11 @@ export interface AssessmentInput {
  * them from the signed-in user's profile (and ignores them if sent).
  */
 export type AssessmentAnswers = Omit<AssessmentInput, "sex" | "age" | "heightCm" | "weightKg">;
+
+/** Heart Rate Recovery from the two protocol readings, or null until both are valid. */
+export function heartRateRecoveryOf(a: Pick<AssessmentAnswers, "peakHeartRateBpm" | "heartRateAfter60sBpm">): number | null {
+  return a.peakHeartRateBpm === "" || a.heartRateAfter60sBpm === "" ? null : a.peakHeartRateBpm - a.heartRateAfter60sBpm;
+}
 
 export interface DerivedMetrics {
   bmi: number;
@@ -98,11 +116,21 @@ export interface HealthRatingResult {
   /** UTC ISO timestamp of a saved assessment. */
   completedAt?: string;
   totalHealthRating: number;
+  /** The maximum for the parameter set this result was scored with (410 now, 390 for v1). */
   maxHealthRating: number;
   percentage: number;
   parameterScores: Record<string, number>;
   fourStates: FourStates;
   derivedMetrics: DerivedMetrics;
+}
+
+/** GET /api/assessments/body-fat-estimate */
+export interface BodyFatEstimate {
+  bodyFatPercent: number;
+  source: "Estimated";
+  method: string;
+  methodName: string;
+  disclaimer: string;
 }
 
 export interface ApiError {
@@ -133,6 +161,7 @@ export interface CalendarEntry extends StateScores {
   assessmentId: string;
   completedAt: string;
   totalHealthRating: number;
+  maxHealthRating: number;
 }
 
 export interface AssessmentParameter {
@@ -153,6 +182,9 @@ export interface AssessmentDetail extends HealthRatingResult {
   createdAt: string;
   completedAt: string;
   scoringVersion: string;
+  /** "v2-41" (current) or "v1-39" (saved before alcohol, tobacco and drugs were split). */
+  parameterSetVersion: string;
+  parameterCount: number;
   body: {
     /** Profile context recorded when the assessment was completed (never recalculated). */
     sexAtAssessment: string;
@@ -167,13 +199,19 @@ export interface AssessmentDetail extends HealthRatingResult {
     hip: number;
     hipUnit: string;
     bodyFatPercentage: number;
+    bodyFatSource: BodyFatSource;
+    bodyFatEstimationMethod: string | null;
   };
   cardiovascular: {
     restingHeartRate: number;
     heartRateRecovery: number;
+    /** Null for assessments saved before the standardized HRR protocol. */
+    peakHeartRate: number | null;
+    heartRateAfter60Seconds: number | null;
     bloodPressureSystolic: number;
     bloodPressureDiastolic: number;
   };
   parameters: AssessmentParameter[];
+  /** The answers as stored. Older (v1) snapshots use the fields of that time. */
   input: AssessmentInput;
 }

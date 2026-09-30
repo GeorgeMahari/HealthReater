@@ -7,41 +7,54 @@ public static class EngineTests
 {
     public static List<(string, Action)> All() => new()
     {
-        ("TotalHealthRating: exactly 39 parameters are scored", () =>
+        ("ParameterSet: 41 parameters, 10 points each, maximum 410", () =>
         {
-            var result = HealthRatingEngine.Calculate(SampleProfile.Healthy());
-            Assert.Equal(39, result.ParameterScores.Count, "Parameter count");
+            Assert.Equal(41, ParameterSet.Count, "Parameter count");
+            Assert.Equal(10, ParameterSet.MaxScorePerParameter, "Max per parameter");
+            Assert.Equal(410, ParameterSet.MaxTotalScore, "Max total");
+            Assert.Equal(41, ParameterSet.Keys.Distinct().Count(), "Keys are unique");
+            Assert.Equal("v2-41", ParameterSet.Version, "Version");
         }),
 
-        ("TotalHealthRating: sum is within [39, 390] bounds", () =>
+        ("TotalHealthRating: exactly ParameterSet.Count (41) parameters are scored", () =>
         {
             var result = HealthRatingEngine.Calculate(SampleProfile.Healthy());
-            Assert.InRange(result.TotalHealthRating, 39, 390, "Total health rating bounds");
+            Assert.Equal(ParameterSet.Count, result.ParameterScores.Count, "Parameter count");
+            Assert.True(ParameterSet.Keys.SequenceEqual(result.ParameterScores.Keys), "Same keys and order as ParameterSet");
+            Assert.Equal(ParameterSet.Count, result.ParameterCount, "Result reports the count");
+            Assert.Equal(ParameterSet.Version, result.ParameterSetVersion, "Result reports the version");
         }),
 
-        ("TotalHealthRating: is the literal sum of the 39 parameter scores (not a weighted average)", () =>
+        ("TotalHealthRating: sum is within [41, 410] bounds", () =>
+        {
+            var result = HealthRatingEngine.Calculate(SampleProfile.Healthy());
+            Assert.InRange(result.TotalHealthRating, ParameterSet.Count, ParameterSet.MaxTotalScore, "Total health rating bounds");
+        }),
+
+        ("TotalHealthRating: is the literal sum of the parameter scores (not a weighted average)", () =>
         {
             var result = HealthRatingEngine.Calculate(SampleProfile.Healthy());
             var sum = result.ParameterScores.Values.Sum();
             Assert.Equal(sum, result.TotalHealthRating, "Total equals sum of parameter scores");
         }),
 
-        ("TotalHealthRating: worst-case profile lands near the floor of 39", () =>
+        ("TotalHealthRating: worst-case profile lands near the floor of 41", () =>
         {
             var result = HealthRatingEngine.Calculate(SampleProfile.WorstCase());
-            Assert.InRange(result.TotalHealthRating, 39, 120, "Worst-case total near floor");
+            Assert.InRange(result.TotalHealthRating, ParameterSet.Count, 130, "Worst-case total near floor");
         }),
 
-        ("TotalHealthRating: max is always 390", () =>
+        ("TotalHealthRating: max is 410 (ParameterSet.MaxTotalScore)", () =>
         {
             var result = HealthRatingEngine.Calculate(SampleProfile.Healthy());
-            Assert.Equal(390, result.MaxHealthRating, "Max health rating");
+            Assert.Equal(410, result.MaxHealthRating, "Max health rating");
+            Assert.Equal(ParameterSet.MaxTotalScore, result.MaxHealthRating, "Max from the single source of truth");
         }),
 
-        ("Percentage: matches total/390*100", () =>
+        ("Percentage: matches total/410*100", () =>
         {
             var result = HealthRatingEngine.Calculate(SampleProfile.Healthy());
-            var expected = Math.Round(result.TotalHealthRating / 390.0 * 100, 2);
+            var expected = Math.Round(result.TotalHealthRating / 410.0 * 100, 2);
             Assert.Equal(expected, result.Percentage, "Percentage calculation");
         }),
 

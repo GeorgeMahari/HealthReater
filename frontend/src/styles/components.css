@@ -9,8 +9,8 @@
   padding: 24px;
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  backdrop-filter: var(--blur-surface);
   -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
   transition:
@@ -881,6 +881,15 @@
   border-top-color: rgba(13, 31, 51, 0.96);
 }
 
+/* A closed bubble is invisible but would still widen the page near the right edge on
+   phones; collapse it so it takes no layout space until it opens. */
+.tooltip-wrap:not(.tooltip-open) .tooltip-bubble {
+  width: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 .tooltip-open .tooltip-bubble {
   opacity: 1;
   visibility: visible;
@@ -913,4 +922,267 @@
 .tooltip-wrap[data-align="end"] .tooltip-bubble::after {
   left: auto;
   right: 13px;
+}
+
+/* ---------- Composite assessment fields (body fat, heart rate recovery) ---------- */
+.field-composite {
+  grid-column: 1 / -1;
+}
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: rgba(19, 42, 51, 0.05);
+  border: 1px solid var(--color-border);
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.segmented-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast),
+    box-shadow var(--dur) var(--ease);
+}
+
+.segmented-option:hover {
+  color: var(--color-text);
+}
+
+.segmented-option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-focus);
+}
+
+.segmented-active {
+  background: var(--color-surface-solid);
+  border-color: rgba(29, 127, 92, 0.35);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.field-error .segmented {
+  border-color: var(--color-danger);
+}
+
+.field-composite > .field-control {
+  max-width: 320px;
+}
+
+.estimate-box {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  border: 1px solid rgba(29, 127, 92, 0.2);
+  max-width: 560px;
+}
+
+.estimate-value {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.estimate-value strong {
+  font-size: 22px;
+  font-weight: 750;
+  color: var(--c-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.estimate-note,
+.estimate-loading {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.estimate-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.estimate-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+/* Measured / Estimated marker */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.source-measured {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.source-estimated {
+  background: #f3ead9;
+  color: #7a5518;
+}
+
+/* Heart rate recovery */
+.hrr-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.hrr-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hrr-sublabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.hrr-result {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 42px 0 14px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: rgba(19, 42, 51, 0.03);
+  font-size: 17px;
+  font-weight: 750;
+  color: var(--c-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.hrr-result .hrr-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.protocol-panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.protocol-panel summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.protocol-panel summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-focus);
+}
+
+.protocol-steps {
+  margin: 0;
+  padding: 0 18px 4px 38px;
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-text);
+}
+
+.protocol-safety {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 10px 16px 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: #7d2d1d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.protocol-safety svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Terms with tooltips (BMI, WHtR, WHR) */
+.term {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.section-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.term-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--color-border);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--color-text);
+}
+
+@media (max-width: 640px) {
+  .hrr-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .segmented {
+    display: flex;
+  }
+
+  .segmented-option {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .field-composite > .field-control {
+    max-width: none;
+  }
 }

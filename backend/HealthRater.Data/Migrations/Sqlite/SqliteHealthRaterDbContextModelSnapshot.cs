@@ -90,8 +90,17 @@ namespace HealthRater.Data.Migrations.Sqlite
                     b.Property<double>("Bmi")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("BodyFatEstimationMethod")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
                     b.Property<double>("BodyFatPercentage")
                         .HasColumnType("REAL");
+
+                    b.Property<string>("BodyFatSource")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
@@ -101,6 +110,9 @@ namespace HealthRater.Data.Migrations.Sqlite
 
                     b.Property<DateOnly?>("DateOfBirthAtAssessment")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("HeartRateAfter60Seconds")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("HeartRateRecovery")
                         .HasColumnType("INTEGER");
@@ -124,6 +136,14 @@ namespace HealthRater.Data.Migrations.Sqlite
                     b.Property<string>("InputSnapshotJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("ParameterSetVersion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("PeakHeartRate")
+                        .HasColumnType("INTEGER");
 
                     b.Property<double>("Percentage")
                         .HasColumnType("REAL");

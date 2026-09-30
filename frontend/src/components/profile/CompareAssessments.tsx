@@ -10,13 +10,14 @@ import { ErrorState, Skeleton } from "../StatusViews";
 
 interface Row {
   label: string;
-  unit?: string;
+  /** A fixed unit, or one that depends on the assessment (the total's maximum differs by parameter set). */
+  unit?: string | ((d: AssessmentDetail) => string);
   decimals: number;
   get: (d: AssessmentDetail) => number | [number, number];
 }
 
 const rows: Row[] = [
-  { label: "Total Health Rating", unit: "/ 390", decimals: 0, get: (d) => d.totalHealthRating },
+  { label: "Total Health Rating", unit: (d) => `/ ${d.maxHealthRating}`, decimals: 0, get: (d) => d.totalHealthRating },
   ...stateMeta.map<Row>((m) => ({ label: m.title, unit: "/ 100", decimals: 1, get: (d) => d.fourStates[m.key].normalizedScore })),
   { label: "BMI", decimals: 2, get: (d) => d.derivedMetrics.bmi },
   { label: "WHtR", decimals: 3, get: (d) => d.derivedMetrics.wHtR },
@@ -31,6 +32,8 @@ const rows: Row[] = [
   },
 ];
 
+const unitOf = (row: Row, d: AssessmentDetail) => (typeof row.unit === "function" ? row.unit(d) : row.unit);
+
 const fmt = (v: number, decimals: number) => Number(v.toFixed(decimals)).toString();
 
 function signed(delta: number, decimals: number) {
@@ -40,7 +43,7 @@ function signed(delta: number, decimals: number) {
 }
 
 const optionLabel = (s: AssessmentSummary) =>
-  `${formatShortDate(s.completedAt)}, ${formatTime(s.completedAt)} · ${s.totalHealthRating}/390`;
+  `${formatShortDate(s.completedAt)}, ${formatTime(s.completedAt)} · ${s.totalHealthRating}/${s.maxHealthRating}`;
 
 /**
  * Side-by-side comparison of two saved assessments. Differences are shown as plain
@@ -140,10 +143,10 @@ export function CompareAssessments({ summaries, onUnauthorized }: { summaries: A
                   <tr key={row.label}>
                     <th scope="row">{row.label}</th>
                     <td>
-                      {show(p)} {row.unit && <small>{row.unit}</small>}
+                      {show(p)} {row.unit && <small>{unitOf(row, prev)}</small>}
                     </td>
                     <td>
-                      {show(n)} {row.unit && <small>{row.unit}</small>}
+                      {show(n)} {row.unit && <small>{unitOf(row, next)}</small>}
                     </td>
                     <td className="compare-diff">{diff}</td>
                   </tr>

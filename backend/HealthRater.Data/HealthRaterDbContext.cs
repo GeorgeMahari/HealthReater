@@ -73,6 +73,9 @@ public abstract class HealthRaterDbContext : DbContext
             assessment.HasKey(a => a.Id);
             assessment.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
             assessment.Property(a => a.ScoringVersion).HasMaxLength(40).IsRequired();
+            assessment.Property(a => a.ParameterSetVersion).HasMaxLength(20).IsRequired();
+            assessment.Property(a => a.BodyFatSource).HasConversion<string>().HasMaxLength(20);
+            assessment.Property(a => a.BodyFatEstimationMethod).HasMaxLength(40);
             assessment.Property(a => a.SexAtAssessment).HasMaxLength(20).IsRequired();
             assessment.Property(a => a.HeightUnit).HasMaxLength(10).IsRequired();
             assessment.Property(a => a.WeightUnit).HasMaxLength(10).IsRequired();

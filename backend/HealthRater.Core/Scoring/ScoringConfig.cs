@@ -108,9 +108,14 @@ public static class ScoringConfig
     }
 
     // ---------------- Alcohol / tobacco / drugs ----------------
+    /// <summary>
+    /// Alcohol, tobacco and recreational drugs are scored independently, each with its own
+    /// table so they can be tuned separately. All three currently start from the scale the
+    /// former combined "alcohol / tobacco / drugs" parameter used (provisional).
+    /// </summary>
     public static class Substance
     {
-        public static readonly Dictionary<Models.SubstanceFrequency, int> ScoreByFrequency = new()
+        private static Dictionary<Models.SubstanceFrequency, int> DefaultScale() => new()
         {
             [Models.SubstanceFrequency.Daily] = 1,
             [Models.SubstanceFrequency.SeveralTimesPerWeek] = 3,
@@ -119,6 +124,10 @@ public static class ScoringConfig
             [Models.SubstanceFrequency.Rarely] = 8,
             [Models.SubstanceFrequency.Never] = 10,
         };
+
+        public static readonly Dictionary<Models.SubstanceFrequency, int> AlcoholScoreByFrequency = DefaultScale();
+        public static readonly Dictionary<Models.SubstanceFrequency, int> TobaccoScoreByFrequency = DefaultScale();
+        public static readonly Dictionary<Models.SubstanceFrequency, int> DrugsScoreByFrequency = DefaultScale();
     }
 
     public static int Clamp1To10(double value)

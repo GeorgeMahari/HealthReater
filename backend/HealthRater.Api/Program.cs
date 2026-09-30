@@ -46,7 +46,7 @@ builder.Services.AddSwaggerGen(options =>
         Title = "HealthRater API",
         Version = "v1",
         Description =
-            "39-parameter health assessment API. Endpoints marked with a lock need a session: " +
+            "41-parameter health assessment API (alcohol, tobacco and drugs scored separately; max 410). Endpoints marked with a lock need a session: " +
             "call POST /api/auth/login (or /register) first — the HttpOnly session cookie is then " +
             "sent automatically by the browser.",
     });

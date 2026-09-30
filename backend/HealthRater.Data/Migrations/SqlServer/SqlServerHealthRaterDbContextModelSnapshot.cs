@@ -95,8 +95,17 @@ namespace HealthRater.Data.Migrations.SqlServer
                     b.Property<double>("Bmi")
                         .HasColumnType("float");
 
+                    b.Property<string>("BodyFatEstimationMethod")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
                     b.Property<double>("BodyFatPercentage")
                         .HasColumnType("float");
+
+                    b.Property<string>("BodyFatSource")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
@@ -106,6 +115,9 @@ namespace HealthRater.Data.Migrations.SqlServer
 
                     b.Property<DateOnly?>("DateOfBirthAtAssessment")
                         .HasColumnType("date");
+
+                    b.Property<int?>("HeartRateAfter60Seconds")
+                        .HasColumnType("int");
 
                     b.Property<int>("HeartRateRecovery")
                         .HasColumnType("int");
@@ -129,6 +141,14 @@ namespace HealthRater.Data.Migrations.SqlServer
                     b.Property<string>("InputSnapshotJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ParameterSetVersion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("PeakHeartRate")
+                        .HasColumnType("int");
 
                     b.Property<double>("Percentage")
                         .HasColumnType("float");
