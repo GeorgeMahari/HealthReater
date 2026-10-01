@@ -37,7 +37,7 @@ export function HomePage() {
             where to focus.
           </p>
           <div className="hero-actions reveal" style={{ "--i": 3 } as React.CSSProperties}>
-            <Link to="/assessment" className="btn btn-primary btn-lg">
+            <Link to="/assessment" className="btn btn-primary btn-lg hero-cta">
               Start your assessment
               <ArrowRight size={18} strokeWidth={2} aria-hidden="true" />
             </Link>

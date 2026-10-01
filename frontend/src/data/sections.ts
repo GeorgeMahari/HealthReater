@@ -131,7 +131,17 @@ export const sections: SectionDef[] = [
     title: "Lifestyle",
     description: "Daily habits: hydration, digestion, alcohol, tobacco, drugs and diet quality.",
     fields: [
-      { key: "dailyWaterIntakeLiters", label: "Daily water intake", kind: "number", unit: "L/day", min: 0, max: 10, step: 0.1 },
+      {
+        key: "dailyWaterIntakeMl",
+        label: "Daily water intake",
+        kind: "number",
+        unit: "ml/day",
+        min: 0,
+        max: 10000,
+        step: 50,
+        placeholder: "e.g. 2000",
+        tooltip: "All the water you drink in a typical day, in milliliters (1,000 ml = 1 liter). For example, 8 glasses of 250 ml = 2,000 ml.",
+      },
       {
         key: "digestionAndEvacuation",
         label: "Digestion & evacuation",
@@ -163,7 +173,17 @@ export const sections: SectionDef[] = [
         options: substanceFrequencyOptions,
         tooltip: "How often you use recreational or non-prescribed drugs.",
       },
-      { key: "vegetablesFiberServingsPerDay", label: "Vegetables & fiber", kind: "number", unit: "servings/day", min: 0, max: 15, step: 0.5 },
+      {
+        key: "vegetablesFiberServingsPerDay",
+        label: "Vegetables & fiber",
+        kind: "number",
+        unit: "servings/day",
+        min: 0,
+        max: 15,
+        step: 0.5,
+        tooltip:
+          "1 serving ≈ 80 g of vegetables or fruit. Enter the approximate number of 80 g servings you eat per day. This only standardizes the amount — different fruits and vegetables still differ in nutrients and fiber.",
+      },
     ],
   },
   {

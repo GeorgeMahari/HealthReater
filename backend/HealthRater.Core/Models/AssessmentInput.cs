@@ -66,7 +66,8 @@ public class AssessmentAnswers
     [Range(1, 10)] public int HomeFamilySatisfaction { get; set; }
 
     // ---------- 6. Lifestyle ----------
-    [Range(0, 10, ErrorMessage = "Daily water intake must be between 0 and 10 liters.")]
+    /// <summary>Liters/day. The web UI asks in ml/day and converts (1000 ml = 1 L) before sending.</summary>
+    [Range(0, 10, ErrorMessage = "Daily water intake must be between 0 and 10,000 ml (10 L) per day.")]
     public double DailyWaterIntakeLiters { get; set; }
 
     [Range(1, 10)] public int DigestionAndEvacuation { get; set; }

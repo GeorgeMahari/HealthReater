@@ -43,7 +43,7 @@ export function Layout() {
           <nav className="nav-links" aria-label="Main">
             <Link
               to="/assessment"
-              className={location.pathname === "/assessment" ? "nav-link active" : "nav-link"}
+              className={location.pathname === "/assessment" ? "nav-link nav-assessment active" : "nav-link nav-assessment"}
               aria-current={location.pathname === "/assessment" ? "page" : undefined}
             >
               Assessment

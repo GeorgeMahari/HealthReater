@@ -1,10 +1,17 @@
 import type { AssessmentAnswers, AssessmentDetail, BodyFatEstimate } from "../types";
 import { apiRequest } from "./http";
 
-/** The request body: the answers without UI-only fields; unknown body fat is sent as null. */
+/**
+ * The request body: the answers without UI-only fields; unknown body fat is sent as null.
+ * Water is entered in ml/day but the API scores liters/day, so it's converted (1000 ml = 1 L).
+ */
 export function toRequest(answers: AssessmentAnswers) {
-  const { bodyFatMode, ...rest } = answers;
-  return { ...rest, bodyFatPercent: bodyFatMode === "unknown" ? null : rest.bodyFatPercent };
+  const { bodyFatMode, dailyWaterIntakeMl, ...rest } = answers;
+  return {
+    ...rest,
+    bodyFatPercent: bodyFatMode === "unknown" ? null : rest.bodyFatPercent,
+    dailyWaterIntakeLiters: dailyWaterIntakeMl === "" ? "" : dailyWaterIntakeMl / 1000,
+  };
 }
 
 /**

@@ -270,6 +270,9 @@ questionnaire answers (everything except sex, age, height and weight).
 `POST /api/assessments` scores **and saves**;
 `POST /api/health-rating/calculate` returns the same result without saving (preview).
 Sex, age, height and weight are read from the profile — if sent, they are ignored.
+`dailyWaterIntakeLiters` is in liters per day; the web form asks for **ml/day** and converts
+(ml ÷ 1000) before sending, so scoring is unchanged. Vegetables & fiber is in servings/day,
+where the form defines 1 serving ≈ 80 g of vegetables or fruit.
 
 ```
 POST /api/assessments            (or /api/health-rating/calculate)

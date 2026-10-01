@@ -52,7 +52,8 @@ export interface AssessmentInput {
   homeFamilySatisfaction: number;
 
   // Lifestyle
-  dailyWaterIntakeLiters: number | "";
+  /** Entered in ml/day; sent to the API as dailyWaterIntakeLiters (ml ÷ 1000). */
+  dailyWaterIntakeMl: number | "";
   digestionAndEvacuation: number;
   immuneHealth: number;
   caffeineServingsPerDay: number | "";

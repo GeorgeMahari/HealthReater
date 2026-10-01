@@ -25,7 +25,7 @@ export const emptyAssessment: AssessmentAnswers = {
   jobSatisfaction: 5,
   homeFamilySatisfaction: 5,
 
-  dailyWaterIntakeLiters: "",
+  dailyWaterIntakeMl: "",
   digestionAndEvacuation: 5,
   immuneHealth: 5,
   caffeineServingsPerDay: "",
