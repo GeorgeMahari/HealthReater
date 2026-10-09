@@ -16,7 +16,8 @@ def healthy() -> AssessmentInput:
         hip_cm=98,
         body_fat_percent=16,
         resting_heart_rate_bpm=58,
-        heart_rate_recovery_bpm=28,
+        peak_heart_rate_bpm=170,
+        heart_rate_after_60s_bpm=142,  # HRR 28 bpm
         systolic_bp_mmhg=115,
         diastolic_bp_mmhg=74,
         energy_level=8,
@@ -34,7 +35,9 @@ def healthy() -> AssessmentInput:
         caffeine_servings_per_day=1,
         junk_food_servings_per_week=2,
         overeating_episodes_per_week=1,
-        alcohol_tobacco_drugs_frequency=SubstanceFrequency.RARELY,
+        alcohol_frequency=SubstanceFrequency.RARELY,
+        tobacco_frequency=SubstanceFrequency.RARELY,
+        drugs_frequency=SubstanceFrequency.RARELY,
         vegetables_fiber_servings_per_day=4,
         daily_steps_neat=9000,
         training_sessions_per_week=5,
@@ -54,7 +57,8 @@ def worst_case() -> AssessmentInput:
     p = copy.deepcopy(healthy())
     p.body_fat_percent = 40
     p.resting_heart_rate_bpm = 110
-    p.heart_rate_recovery_bpm = 3
+    p.peak_heart_rate_bpm = 150
+    p.heart_rate_after_60s_bpm = 147  # HRR 3 bpm
     p.systolic_bp_mmhg = 170
     p.diastolic_bp_mmhg = 100
     p.energy_level = p.energy_stability = p.average_sleep_quality = p.circadian_health = 1
@@ -64,7 +68,9 @@ def worst_case() -> AssessmentInput:
     p.caffeine_servings_per_day = 10
     p.junk_food_servings_per_week = 25
     p.overeating_episodes_per_week = 10
-    p.alcohol_tobacco_drugs_frequency = SubstanceFrequency.DAILY
+    p.alcohol_frequency = SubstanceFrequency.DAILY
+    p.tobacco_frequency = SubstanceFrequency.DAILY
+    p.drugs_frequency = SubstanceFrequency.DAILY
     p.vegetables_fiber_servings_per_day = 0
     p.daily_steps_neat = 500
     p.training_sessions_per_week = 0

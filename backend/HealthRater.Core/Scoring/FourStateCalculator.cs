@@ -6,6 +6,12 @@ namespace HealthRater.Core.Scoring;
 /// Configurable parameter -> state membership map. Parameters can contribute to
 /// multiple states. This is architectural grouping only, not a clinically validated
 /// predictive model (per spec).
+///
+/// Substance use: alcohol, tobacco and recreational drugs are three independent parameters.
+/// Each sits in the same two states the former combined parameter belonged to: Immunity
+/// (toxin load on immune, gut, skin and dental health) and Longevity (long-term
+/// cardiovascular, cancer and mortality risk). So Immunity has 13 parameters and Longevity
+/// 15; Energy/Strength/Stamina and Mental/Emotional are unchanged.
 /// </summary>
 public static class FourStateCalculator
 {
@@ -42,7 +48,9 @@ public static class FourStateCalculator
         HealthRatingEngine.Keys.Caffeine,
         HealthRatingEngine.Keys.JunkFood,
         HealthRatingEngine.Keys.Overeating,
-        HealthRatingEngine.Keys.SubstanceUse,
+        HealthRatingEngine.Keys.Alcohol,
+        HealthRatingEngine.Keys.Tobacco,
+        HealthRatingEngine.Keys.Drugs,
         HealthRatingEngine.Keys.VegetablesFiber,
         HealthRatingEngine.Keys.SkinHealth,
         HealthRatingEngine.Keys.DentalHealth,
@@ -63,7 +71,9 @@ public static class FourStateCalculator
         HealthRatingEngine.Keys.PhysicalTraining,
         HealthRatingEngine.Keys.Neat,
         HealthRatingEngine.Keys.VegetablesFiber,
-        HealthRatingEngine.Keys.SubstanceUse,
+        HealthRatingEngine.Keys.Alcohol,
+        HealthRatingEngine.Keys.Tobacco,
+        HealthRatingEngine.Keys.Drugs,
     };
 
     public static FourStates Calculate(Dictionary<string, int> scores)

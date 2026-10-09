@@ -46,8 +46,14 @@ public static class PhysicalTrainingScorer
 
 public static class SubstanceScorer
 {
-    public static int Score(SubstanceFrequency frequency) =>
-        ScoringConfig.Substance.ScoreByFrequency[frequency];
+    public static int ScoreAlcohol(SubstanceFrequency frequency) =>
+        ScoringConfig.Substance.AlcoholScoreByFrequency[frequency];
+
+    public static int ScoreTobacco(SubstanceFrequency frequency) =>
+        ScoringConfig.Substance.TobaccoScoreByFrequency[frequency];
+
+    public static int ScoreDrugs(SubstanceFrequency frequency) =>
+        ScoringConfig.Substance.DrugsScoreByFrequency[frequency];
 }
 
 public static class CooperScorer

@@ -223,6 +223,31 @@
   border-radius: var(--radius-pill);
 }
 
+/* "Assessment" in the top bar: green outlined pill (HealthRater primary green) */
+.nav-link.nav-assessment {
+  padding: 9px 18px;
+  font-size: 14.5px;
+  white-space: nowrap;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1.5px solid var(--color-primary);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast),
+    box-shadow var(--dur) var(--ease);
+}
+
+.nav-link.nav-assessment:hover,
+.nav-link.nav-assessment.active {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.nav-link.nav-assessment:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-focus);
+}
+
 .nav-user {
   display: flex;
   align-items: center;
@@ -318,5 +343,24 @@
 
   .nav-link {
     padding: 8px 10px;
+  }
+
+  .nav-link.nav-assessment {
+    padding: 7px 13px;
+    font-size: 14px;
+  }
+}
+
+/* Very narrow phones, signed out: logo + Assessment + Log in + Sign up must fit on one line
+   without wrapping or horizontal scroll, so the wordmark gives way (the logo stays as the
+   home link, which keeps its "HealthRater home" label). */
+@media (max-width: 400px) {
+  .topbar-inner:has(.nav-cta) .brand-mark {
+    display: none;
+  }
+
+  .nav-link,
+  .nav-cta {
+    white-space: nowrap;
   }
 }

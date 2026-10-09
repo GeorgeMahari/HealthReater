@@ -9,17 +9,31 @@ import { useAssessment } from "../context/AssessmentContext";
 import { saveAssessment } from "../api/healthRatingApi";
 import { ApiError } from "../api/http";
 import { useAuth } from "../context/AuthContext";
-import { sectionIcons } from "../data/uiMeta";
+import { sectionIcons, termTooltips } from "../data/uiMeta";
+import { Tooltip } from "../components/Tooltip";
+import { BodyFatField } from "../components/assessment/BodyFatField";
+import { useBodyFatEstimate } from "../components/assessment/bodyFatEstimate";
+import { HeartRateRecoveryField } from "../components/assessment/HeartRateRecoveryField";
+import { validateHeartRateRecovery } from "../components/assessment/heartRateRecovery";
+import { heartRateRecoveryOf, type AssessmentAnswers } from "../types";
 
 const TOTAL_STEPS = sections.length + 1; // + final summary step
 const stepTitles = [...sections.map((s) => s.title), "Review & Calculate"];
 const stepIds = [...sections.map((s) => s.id), "review"];
 
-function validateField(field: FieldDef, value: unknown): string | undefined {
+function validateField(field: FieldDef, answers: AssessmentAnswers): string | undefined {
+  if (field.kind === "bodyFat") {
+    if (answers.bodyFatMode === "") return "Choose whether you know your body fat percentage.";
+    if (answers.bodyFatMode === "unknown") return undefined; // estimated by the API
+  }
+  if (field.kind === "heartRateRecovery") {
+    return validateHeartRateRecovery(answers.peakHeartRateBpm, answers.heartRateAfter60sBpm, answers.restingHeartRateBpm);
+  }
+  const value = answers[field.key];
   if (value === "" || value === undefined || value === null) {
     return `${field.label} is required.`;
   }
-  if (field.kind === "number" && typeof value === "number") {
+  if ((field.kind === "number" || field.kind === "bodyFat") && typeof value === "number") {
     if (field.min !== undefined && value < field.min) {
       return `${field.label} must be at least ${field.min}${field.unit ? " " + field.unit : ""}.`;
     }
@@ -28,6 +42,49 @@ function validateField(field: FieldDef, value: unknown): string | undefined {
     }
   }
   return undefined;
+}
+
+const termLabel = (term: string) => ({ bmi: "BMI", whtr: "WHtR", whr: "WHR" })[term] ?? term;
+
+function BodyFatSummaryRow({ answers }: { answers: AssessmentAnswers }) {
+  const estimate = useBodyFatEstimate(answers.bodyFatMode === "unknown");
+  return (
+    <div className="summary-row">
+      <dt>Body fat</dt>
+      <dd>
+        {answers.bodyFatMode === "unknown" ? (
+          <>
+            {estimate.kind === "ready" ? `${estimate.estimate.bodyFatPercent} %` : "—"}{" "}
+            <span className="source-badge source-estimated">Estimated</span>
+          </>
+        ) : (
+          <>
+            {String(answers.bodyFatPercent)} % <span className="source-badge source-measured">Measured</span>
+          </>
+        )}
+      </dd>
+    </div>
+  );
+}
+
+function HeartRateRecoverySummaryRows({ answers }: { answers: AssessmentAnswers }) {
+  const hrr = heartRateRecoveryOf(answers);
+  return (
+    <>
+      <div className="summary-row">
+        <dt>Peak heart rate</dt>
+        <dd>{String(answers.peakHeartRateBpm)} bpm</dd>
+      </div>
+      <div className="summary-row">
+        <dt>Heart rate after 60 s</dt>
+        <dd>{String(answers.heartRateAfter60sBpm)} bpm</dd>
+      </div>
+      <div className="summary-row">
+        <dt>Heart Rate Recovery</dt>
+        <dd>{hrr === null ? "—" : `${hrr} bpm`}</dd>
+      </div>
+    </>
+  );
 }
 
 export function AssessmentPage() {
@@ -56,11 +113,22 @@ export function AssessmentPage() {
     if (!currentSection) return true;
     const newErrors: Record<string, string> = {};
     for (const field of currentSection.fields) {
-      const err = validateField(field, assessment[field.key]);
+      const err = validateField(field, assessment);
       if (err) newErrors[field.key] = err;
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  }
+
+  /** Updates an answer and clears the error shown for the field it belongs to. */
+  function change<K extends keyof AssessmentAnswers>(fieldKey: string, key: K, value: AssessmentAnswers[K]) {
+    updateField(key, value);
+    setErrors((prev) => {
+      if (!(fieldKey in prev)) return prev;
+      const next = { ...prev };
+      delete next[fieldKey];
+      return next;
+    });
   }
 
   function goNext() {
@@ -77,7 +145,7 @@ export function AssessmentPage() {
     // Validate every section before submitting.
     for (const section of sections) {
       for (const field of section.fields) {
-        const err = validateField(field, assessment[field.key]);
+        const err = validateField(field, assessment);
         if (err) {
           setSubmitError([`${section.title}: ${err}`]);
           return;
@@ -88,7 +156,8 @@ export function AssessmentPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Only the answers are sent; the API adds sex and age from the profile and saves the result.
+      // Only the answers are sent; the API adds sex, age, height and weight from the profile,
+      // estimates body fat when it's unknown, and saves the result.
       const result = await saveAssessment(assessment);
       setResult(result);
       navigate("/results");
@@ -127,21 +196,53 @@ export function AssessmentPage() {
             <div>
               <h2>{currentSection.title}</h2>
               <p className="section-desc">{currentSection.description}</p>
+              {currentSection.terms && (
+                <p className="section-terms">
+                  {currentSection.terms.map((term) => (
+                    <span key={term} className="term-chip">
+                      {termLabel(term)}
+                      <Tooltip text={termTooltips[term]} label={`What is ${termLabel(term)}?`} />
+                    </span>
+                  ))}
+                </p>
+              )}
             </div>
           </div>
           {currentSection.fields.length === 0 && user ? (
             <ProfileSummary user={user} />
           ) : (
           <div className="field-grid">
-            {currentSection.fields.map((field) => (
-              <FieldInput
-                key={field.key}
-                field={field}
-                value={assessment[field.key]}
-                onChange={(v) => updateField(field.key, v)}
-                error={errors[field.key]}
-              />
-            ))}
+            {currentSection.fields.map((field) =>
+              field.kind === "bodyFat" ? (
+                <BodyFatField
+                  key={field.key}
+                  field={field}
+                  mode={assessment.bodyFatMode}
+                  value={assessment.bodyFatPercent}
+                  onModeChange={(mode) => change(field.key, "bodyFatMode", mode)}
+                  onValueChange={(v) => change(field.key, "bodyFatPercent", v)}
+                  error={errors[field.key]}
+                />
+              ) : field.kind === "heartRateRecovery" ? (
+                <HeartRateRecoveryField
+                  key={field.key}
+                  field={field}
+                  peak={assessment.peakHeartRateBpm}
+                  after60={assessment.heartRateAfter60sBpm}
+                  onPeakChange={(v) => change(field.key, "peakHeartRateBpm", v)}
+                  onAfter60Change={(v) => change(field.key, "heartRateAfter60sBpm", v)}
+                  error={errors[field.key]}
+                />
+              ) : (
+                <FieldInput
+                  key={field.key}
+                  field={field}
+                  value={assessment[field.key]}
+                  onChange={(v) => change(field.key, field.key, v)}
+                  error={errors[field.key]}
+                />
+              )
+            )}
           </div>
           )}
         </div>
@@ -179,15 +280,23 @@ export function AssessmentPage() {
                       <div className="summary-row"><dt>Weight</dt><dd>{user.weightKg} kg</dd></div>
                     </>
                   )}
-                  {section.fields.map((field) => (
-                    <div className="summary-row" key={field.key}>
-                      <dt>{field.label}</dt>
-                      <dd>
-                        {String(assessment[field.key])}
-                        {field.unit ? ` ${field.unit}` : ""}
-                      </dd>
-                    </div>
-                  ))}
+                  {section.fields.map((field) =>
+                    field.kind === "bodyFat" ? (
+                      <BodyFatSummaryRow key={field.key} answers={assessment} />
+                    ) : field.kind === "heartRateRecovery" ? (
+                      <HeartRateRecoverySummaryRows key={field.key} answers={assessment} />
+                    ) : (
+                      <div className="summary-row" key={field.key}>
+                        <dt>{field.label}</dt>
+                        <dd>
+                          {field.kind === "select"
+                            ? (field.options?.find((o) => o.value === assessment[field.key])?.label ?? String(assessment[field.key]))
+                            : String(assessment[field.key])}
+                          {field.unit && field.kind !== "select" ? ` ${field.unit}` : ""}
+                        </dd>
+                      </div>
+                    )
+                  )}
                 </dl>
               </div>
               );

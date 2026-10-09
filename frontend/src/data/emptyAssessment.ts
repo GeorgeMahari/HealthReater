@@ -5,10 +5,12 @@ export const emptyAssessment: AssessmentAnswers = {
 
   waistCm: "",
   hipCm: "",
+  bodyFatMode: "",
   bodyFatPercent: "",
 
   restingHeartRateBpm: "",
-  heartRateRecoveryBpm: "",
+  peakHeartRateBpm: "",
+  heartRateAfter60sBpm: "",
   systolicBpMmHg: "",
   diastolicBpMmHg: "",
 
@@ -23,13 +25,15 @@ export const emptyAssessment: AssessmentAnswers = {
   jobSatisfaction: 5,
   homeFamilySatisfaction: 5,
 
-  dailyWaterIntakeLiters: "",
+  dailyWaterIntakeMl: "",
   digestionAndEvacuation: 5,
   immuneHealth: 5,
   caffeineServingsPerDay: "",
   junkFoodServingsPerWeek: "",
   overeatingEpisodesPerWeek: "",
-  alcoholTobaccoDrugsFrequency: "",
+  alcoholFrequency: "",
+  tobaccoFrequency: "",
+  drugsFrequency: "",
   vegetablesFiberServingsPerDay: "",
 
   dailyStepsNeat: "",

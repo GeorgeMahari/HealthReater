@@ -69,10 +69,38 @@ public class AssessmentsController : ControllerBase
             s.Id,
             s.CompletedAt,
             s.TotalHealthRating,
+            s.TotalPossibleScore,
             s.EnergyStrengthStamina,
             s.MentalEmotional,
             s.Immunity,
             s.Longevity)).ToList());
+    }
+
+    /// <summary>
+    /// The body-fat estimate used when the user answers "I don't know" — calculated from the
+    /// signed-in user's profile (sex, age, height, weight) with the configured estimator
+    /// (currently Deurenberg et al. 1991). Waist and hip are optional, for estimators that use
+    /// them. 409 when the profile is incomplete; 422 when no plausible estimate is possible.
+    /// </summary>
+    [HttpGet("body-fat-estimate")]
+    [ProducesResponseType(typeof(BodyFatEstimateResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<BodyFatEstimateResponse>> BodyFatEstimate(
+        [FromQuery] double? waistCm = null, [FromQuery] double? hipCm = null)
+    {
+        var (estimate, profileError, estimateError) = await _assessments.EstimateBodyFatAsync(CurrentUserId, waistCm, hipCm);
+        if (profileError is not null)
+        {
+            return Conflict(new { code = "profile_incomplete", errors = new[] { profileError } });
+        }
+        if (estimate is null)
+        {
+            return UnprocessableEntity(new { errors = new[] { estimateError } });
+        }
+        return Ok(new BodyFatEstimateResponse(
+            estimate.BodyFatPercent, nameof(BodyFatSource.Estimated), estimate.MethodId, estimate.MethodName,
+            HealthRater.Core.Scoring.BodyFat.BodyFatEstimation.Disclaimer));
     }
 
     [HttpGet("{id:guid}")]

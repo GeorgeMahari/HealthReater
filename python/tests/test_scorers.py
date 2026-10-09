@@ -60,9 +60,10 @@ def test_heart_rate_recovery_30bpm_scores_10():
     assert s.score_heart_rate_recovery(30) == 10
 
 
-def test_substance_never_and_daily():
-    assert s.score_substance(SubstanceFrequency.NEVER) == 10
-    assert s.score_substance(SubstanceFrequency.DAILY) == 1
+def test_substances_never_and_daily():
+    for score in (s.score_alcohol, s.score_tobacco, s.score_drugs):
+        assert score(SubstanceFrequency.NEVER) == 10
+        assert score(SubstanceFrequency.DAILY) == 1
 
 
 def test_physical_training_5_sessions_near_max():

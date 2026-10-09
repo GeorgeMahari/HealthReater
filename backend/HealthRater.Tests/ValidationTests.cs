@@ -45,6 +45,16 @@ public static class ValidationTests
             Assert.False(outcome.IsValid, "Body fat > 100% rejected");
         }),
 
+        ("Validation: implausible measured body fat (1% or 80%) is rejected", () =>
+        {
+            foreach (var value in new[] { 1.0, 80.0 })
+            {
+                var input = SampleProfile.Healthy();
+                input.BodyFatPercent = value;
+                Assert.False(AssessmentValidator.Validate(input).IsValid, $"Body fat {value}% rejected");
+            }
+        }),
+
         ("Validation: negative anthropometric value is rejected", () =>
         {
             var input = SampleProfile.Healthy();

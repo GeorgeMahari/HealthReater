@@ -7,6 +7,9 @@ namespace HealthRater.Api.Dtos;
 
 public record StateScoresResponse(double EnergyStrengthStamina, double MentalEmotional, double Immunity, double Longevity);
 
+/// <summary>Body-fat estimate preview for "I don't know my body fat".</summary>
+public record BodyFatEstimateResponse(double BodyFatPercent, string Source, string Method, string MethodName, string Disclaimer);
+
 /// <summary>History list row — no parameter data.</summary>
 public record AssessmentSummaryResponse(
     Guid Id,
@@ -27,6 +30,7 @@ public record CalendarEntryResponse(
     Guid AssessmentId,
     DateTime CompletedAt,
     int TotalHealthRating,
+    int MaxHealthRating,
     double EnergyStrengthStamina,
     double MentalEmotional,
     double Immunity,
@@ -45,11 +49,15 @@ public record BodySnapshotResponse(
     string WaistUnit,
     double Hip,
     string HipUnit,
-    double BodyFatPercentage);
+    double BodyFatPercentage,
+    string BodyFatSource,
+    string? BodyFatEstimationMethod);
 
 public record CardiovascularSnapshotResponse(
     int RestingHeartRate,
     int HeartRateRecovery,
+    int? PeakHeartRate,
+    int? HeartRateAfter60Seconds,
     int BloodPressureSystolic,
     int BloodPressureDiastolic);
 
@@ -67,7 +75,8 @@ public record ParameterDetailResponse(
 /// The full historical snapshot. The top-level result fields use the same names as the
 /// live calculation response (totalHealthRating, percentage, fourStates, derivedMetrics,
 /// parameterScores), so the frontend can render a saved assessment with the Results page.
-/// Values are exactly as stored — nothing is recalculated.
+/// Values are exactly as stored — nothing is recalculated. v1 assessments (39 parameters, max
+/// 390, combined substance parameter) are returned with their own count and maximum.
 /// </summary>
 public record AssessmentDetailResponse(
     Guid Id,
@@ -75,6 +84,8 @@ public record AssessmentDetailResponse(
     DateTime CreatedAt,
     DateTime? CompletedAt,
     string ScoringVersion,
+    string ParameterSetVersion,
+    int ParameterCount,
     int TotalHealthRating,
     int MaxHealthRating,
     double Percentage,
@@ -97,6 +108,8 @@ public record AssessmentDetailResponse(
             a.CreatedAt,
             a.CompletedAt,
             a.ScoringVersion,
+            a.ParameterSetVersion,
+            parameters.Count,
             a.TotalHealthRating,
             a.TotalPossibleScore,
             a.Percentage,
@@ -111,9 +124,11 @@ public record AssessmentDetailResponse(
             parameters.ToDictionary(p => p.ParameterKey, p => p.Score),
             new BodySnapshotResponse(
                 a.SexAtAssessment, a.AgeAtAssessment, a.DateOfBirthAtAssessment, a.Height, a.HeightUnit, a.Weight, a.WeightUnit,
-                a.Waist, a.WaistUnit, a.Hip, a.HipUnit, a.BodyFatPercentage),
+                a.Waist, a.WaistUnit, a.Hip, a.HipUnit, a.BodyFatPercentage,
+                a.BodyFatSource.ToString(), a.BodyFatEstimationMethod),
             new CardiovascularSnapshotResponse(
-                a.RestingHeartRate, a.HeartRateRecovery, a.BloodPressureSystolic, a.BloodPressureDiastolic),
+                a.RestingHeartRate, a.HeartRateRecovery, a.PeakHeartRate, a.HeartRateAfter60Seconds,
+                a.BloodPressureSystolic, a.BloodPressureDiastolic),
             parameters.Select(p => new ParameterDetailResponse(
                 p.ParameterKey, p.ParameterName, p.SortOrder, p.RawValue, p.RawText, p.NormalizedValue, p.Unit, p.Score)).ToList(),
             input.RootElement.Clone());

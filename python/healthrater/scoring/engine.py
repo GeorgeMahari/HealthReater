@@ -5,7 +5,8 @@ from healthrater.scoring import config as cfg
 from healthrater.scoring import scorers as s
 from healthrater.scoring.derived import calculate_derived_metrics
 from healthrater.scoring.four_states import calculate_four_states
-from healthrater.scoring.keys import Keys
+from healthrater.scoring.body_fat import resolve_body_fat
+from healthrater.scoring.keys import MAX_TOTAL_SCORE, PARAMETER_KEYS, PARAMETER_SET_VERSION, TOTAL_PARAMETER_COUNT, Keys
 
 
 def _score_sex(sex: Sex) -> int:
@@ -20,6 +21,9 @@ def _score_age(age: int) -> int:
 
 
 def calculate(input: AssessmentInput) -> HealthRatingResult:
+    error = resolve_body_fat(input)
+    if error or input.body_fat_percent is None:
+        raise ValueError(error or "Body fat is missing; validate the input first.")
     derived = calculate_derived_metrics(input)
 
     scores: dict[str, int] = {
@@ -51,7 +55,9 @@ def calculate(input: AssessmentInput) -> HealthRatingResult:
         Keys.CAFFEINE: s.score_caffeine(input.caffeine_servings_per_day),
         Keys.JUNK_FOOD: s.score_junk_food(input.junk_food_servings_per_week),
         Keys.OVEREATING: s.score_overeating(input.overeating_episodes_per_week),
-        Keys.SUBSTANCE_USE: s.score_substance(input.alcohol_tobacco_drugs_frequency),
+        Keys.ALCOHOL: s.score_alcohol(input.alcohol_frequency),
+        Keys.TOBACCO: s.score_tobacco(input.tobacco_frequency),
+        Keys.DRUGS: s.score_drugs(input.drugs_frequency),
         Keys.VEGETABLES_FIBER: s.score_vegetables_fiber(input.vegetables_fiber_servings_per_day),
         Keys.NEAT: s.score_neat(input.daily_steps_neat),
         Keys.PHYSICAL_TRAINING: s.score_physical_training(input.training_sessions_per_week),
@@ -66,14 +72,22 @@ def calculate(input: AssessmentInput) -> HealthRatingResult:
         Keys.HAIR_HEALTH: input.hair_health,
     }
 
+    if list(scores) != PARAMETER_KEYS:
+        raise AssertionError("The engine's scores don't match PARAMETER_KEYS.")
+
     total = sum(scores.values())
     four_states = calculate_four_states(scores)
 
     return HealthRatingResult(
         total_health_rating=total,
-        max_health_rating=390,
-        percentage=round((total / 390.0) * 100, 2),
+        max_health_rating=MAX_TOTAL_SCORE,
+        percentage=round((total / float(MAX_TOTAL_SCORE)) * 100, 2),
         parameter_scores=scores,
         four_states=four_states,
         derived_metrics=derived,
+        parameter_count=TOTAL_PARAMETER_COUNT,
+        parameter_set_version=PARAMETER_SET_VERSION,
+        body_fat_percent=input.body_fat_percent,
+        body_fat_source=input.body_fat_source,
+        heart_rate_recovery_bpm=input.heart_rate_recovery_bpm,
     )

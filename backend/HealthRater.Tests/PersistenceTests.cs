@@ -11,16 +11,17 @@ public static class PersistenceTests
 {
     public static List<(string, Action)> All() => new()
     {
-        ("Persistence: parameter catalog covers exactly the engine's 39 keys, in order", () =>
+        ("Persistence: parameter catalog covers exactly the engine's 41 keys, in ParameterSet order", () =>
         {
             var engineKeys = HealthRatingEngine.Calculate(SampleProfile.Healthy()).ParameterScores.Keys.ToList();
             var catalogKeys = ParameterCatalog.All.Select(p => p.Key).ToList();
-            Assert.Equal(39, catalogKeys.Count, "Catalog size");
+            Assert.Equal(ParameterSet.Count, catalogKeys.Count, "Catalog size");
             Assert.True(engineKeys.SequenceEqual(catalogKeys), "Catalog keys match engine keys and order");
-            Assert.Equal(39, catalogKeys.Distinct().Count(), "Keys are unique");
+            Assert.True(ParameterSet.Keys.SequenceEqual(catalogKeys), "Catalog keys match ParameterSet");
+            Assert.Equal(ParameterSet.Count, catalogKeys.Distinct().Count(), "Keys are unique");
         }),
 
-        ("Persistence: saved assessment stores the full snapshot and all 39 scored parameters", () =>
+        ("Persistence: saved assessment stores the full snapshot and all 41 scored parameters", () =>
         {
             using var db = TestDatabase.Create();
             var user = TestDatabase.AddUser(db.Context, "a@example.com");
@@ -33,7 +34,8 @@ public static class PersistenceTests
             var loaded = new AssessmentService(read).GetAsync(user.Id, saved.Id).GetAwaiter().GetResult()!;
             Assert.Equal(AssessmentStatus.Completed, loaded.Status, "Status");
             Assert.Equal(expected.TotalHealthRating, loaded.TotalHealthRating, "Total");
-            Assert.Equal(390, loaded.TotalPossibleScore, "Max");
+            Assert.Equal(410, loaded.TotalPossibleScore, "Max");
+            Assert.Equal(ParameterSet.Version, loaded.ParameterSetVersion, "Parameter set version");
             Assert.Equal(expected.Percentage, loaded.Percentage, "Percentage");
             Assert.Equal(expected.FourStates.Longevity.NormalizedScore, loaded.Longevity.NormalizedScore, "Longevity state");
             Assert.Equal(expected.DerivedMetrics.WHtR, loaded.WaistToHeightRatio, "WHtR");
@@ -43,7 +45,7 @@ public static class PersistenceTests
             Assert.Equal(HealthRatingEngine.ScoringVersion, loaded.ScoringVersion, "Scoring version");
             Assert.Equal(DateTimeKind.Utc, loaded.CompletedAt!.Value.Kind, "CompletedAt read back as UTC");
 
-            Assert.Equal(39, loaded.ParameterScores.Count, "39 parameter rows");
+            Assert.Equal(41, loaded.ParameterScores.Count, "41 parameter rows");
             foreach (var p in loaded.ParameterScores)
             {
                 Assert.Equal(expected.ParameterScores[p.ParameterKey], p.Score, $"Score of {p.ParameterKey}");
@@ -74,7 +76,7 @@ public static class PersistenceTests
             Assert.Equal(first.TotalHealthRating,
                 service.GetAsync(user.Id, first.Id).GetAwaiter().GetResult()!.TotalHealthRating,
                 "First assessment unchanged");
-            Assert.Equal(78, db.Context.AssessmentParameterScores.Count(), "2 × 39 parameter rows");
+            Assert.Equal(82, db.Context.AssessmentParameterScores.Count(), "2 × 41 parameter rows");
         }),
 
         ("Persistence: a user can never read or delete another user's assessment", () =>

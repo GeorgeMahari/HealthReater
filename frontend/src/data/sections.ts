@@ -1,6 +1,10 @@
 import type { AssessmentAnswers } from "../types";
 
-export type FieldKind = "select" | "number" | "scale";
+/**
+ * "bodyFat" and "heartRateRecovery" are composite fields with their own components
+ * (BodyFatField, HeartRateRecoveryField); the rest are rendered by FieldInput.
+ */
+export type FieldKind = "select" | "number" | "scale" | "bodyFat" | "heartRateRecovery";
 
 export interface FieldDef {
   key: keyof AssessmentAnswers;
@@ -19,8 +23,20 @@ export interface SectionDef {
   id: string;
   title: string;
   description: string;
+  /** Terms (termTooltips keys) shown with an info tooltip under the description. */
+  terms?: string[];
   fields: FieldDef[];
 }
+
+/** One frequency scale, used by each of the three independent substance questions. */
+export const substanceFrequencyOptions: { value: string; label: string }[] = [
+  { value: "Never", label: "Never" },
+  { value: "Rarely", label: "Rarely" },
+  { value: "Monthly", label: "Monthly" },
+  { value: "Weekly", label: "Weekly" },
+  { value: "SeveralTimesPerWeek", label: "Several times a week" },
+  { value: "Daily", label: "Daily" },
+];
 
 export const sections: SectionDef[] = [
   {
@@ -34,6 +50,7 @@ export const sections: SectionDef[] = [
     id: "body-metrics",
     title: "Body Metrics",
     description: "Waist, hip and body fat. BMI, WHtR and WHR are calculated automatically from these.",
+    terms: ["bmi", "whtr", "whr"],
     fields: [
       {
         key: "waistCm",
@@ -53,7 +70,16 @@ export const sections: SectionDef[] = [
         max: 250,
         tooltip: "Measured at the widest point of the hips. Used with your waist to calculate WHR (waist-to-hip ratio).",
       },
-      { key: "bodyFatPercent", label: "Body fat", kind: "number", unit: "%", min: 0, max: 100, step: 0.1 },
+      {
+        key: "bodyFatPercent",
+        label: "Body fat",
+        kind: "bodyFat",
+        unit: "%",
+        min: 2,
+        max: 75,
+        step: 0.1,
+        tooltip: "Measured with a body-composition scale, DEXA, calipers or similar. If you don't know it, HealthRater estimates it for you.",
+      },
     ],
   },
   {
@@ -63,13 +89,10 @@ export const sections: SectionDef[] = [
     fields: [
       { key: "restingHeartRateBpm", label: "Resting heart rate", kind: "number", unit: "bpm", min: 30, max: 220 },
       {
-        key: "heartRateRecoveryBpm",
-        label: "Heart-rate recovery",
-        kind: "number",
-        unit: "bpm drop",
-        min: 0,
-        max: 100,
-        tooltip: "How many beats per minute your heart rate falls in the first minute after you stop intense exercise. A bigger drop means a fitter heart.",
+        key: "peakHeartRateBpm",
+        label: "Heart Rate Recovery (HRR)",
+        kind: "heartRateRecovery",
+        unit: "bpm",
       },
       { key: "systolicBpMmHg", label: "Systolic blood pressure", kind: "number", unit: "mmHg", min: 60, max: 260 },
       { key: "diastolicBpMmHg", label: "Diastolic blood pressure", kind: "number", unit: "mmHg", min: 30, max: 160 },
@@ -106,9 +129,19 @@ export const sections: SectionDef[] = [
   {
     id: "lifestyle",
     title: "Lifestyle",
-    description: "Daily habits: hydration, digestion, substances and diet quality.",
+    description: "Daily habits: hydration, digestion, alcohol, tobacco, drugs and diet quality.",
     fields: [
-      { key: "dailyWaterIntakeLiters", label: "Daily water intake", kind: "number", unit: "L/day", min: 0, max: 10, step: 0.1 },
+      {
+        key: "dailyWaterIntakeMl",
+        label: "Daily water intake",
+        kind: "number",
+        unit: "ml/day",
+        min: 0,
+        max: 10000,
+        step: 50,
+        placeholder: "e.g. 2000",
+        tooltip: "All the water you drink in a typical day, in milliliters (1,000 ml = 1 liter). For example, 8 glasses of 250 ml = 2,000 ml.",
+      },
       {
         key: "digestionAndEvacuation",
         label: "Digestion & evacuation",
@@ -120,19 +153,37 @@ export const sections: SectionDef[] = [
       { key: "junkFoodServingsPerWeek", label: "Junk food", kind: "number", unit: "servings/week", min: 0, max: 50 },
       { key: "overeatingEpisodesPerWeek", label: "Overeating / gluttony", kind: "number", unit: "episodes/week", min: 0, max: 21 },
       {
-        key: "alcoholTobaccoDrugsFrequency",
-        label: "Alcohol / tobacco / drugs",
+        key: "alcoholFrequency",
+        label: "Alcohol consumption",
         kind: "select",
-        options: [
-          { value: "Never", label: "Never" },
-          { value: "Rarely", label: "Rarely" },
-          { value: "Monthly", label: "Monthly" },
-          { value: "Weekly", label: "Weekly" },
-          { value: "SeveralTimesPerWeek", label: "Several times a week" },
-          { value: "Daily", label: "Daily" },
-        ],
+        options: substanceFrequencyOptions,
+        tooltip: "How often you drink alcohol (any amount). Scored on its own, separately from tobacco and drugs.",
       },
-      { key: "vegetablesFiberServingsPerDay", label: "Vegetables & fiber", kind: "number", unit: "servings/day", min: 0, max: 15, step: 0.5 },
+      {
+        key: "tobaccoFrequency",
+        label: "Tobacco / smoking",
+        kind: "select",
+        options: substanceFrequencyOptions,
+        tooltip: "How often you smoke or use tobacco or nicotine products (cigarettes, cigars, vapes, heated tobacco, snus).",
+      },
+      {
+        key: "drugsFrequency",
+        label: "Recreational drug use",
+        kind: "select",
+        options: substanceFrequencyOptions,
+        tooltip: "How often you use recreational or non-prescribed drugs.",
+      },
+      {
+        key: "vegetablesFiberServingsPerDay",
+        label: "Vegetables & fiber",
+        kind: "number",
+        unit: "servings/day",
+        min: 0,
+        max: 15,
+        step: 0.5,
+        tooltip:
+          "1 serving ≈ 80 g of vegetables or fruit. Enter the approximate number of 80 g servings you eat per day. This only standardizes the amount — different fruits and vegetables still differ in nutrients and fiber.",
+      },
     ],
   },
   {

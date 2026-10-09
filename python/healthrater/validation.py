@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from healthrater.models import AssessmentInput
+from healthrater.scoring.body_fat import resolve_body_fat
 
 ONE_TO_TEN_FIELDS = [
     "energy_level", "energy_stability", "average_sleep_quality", "circadian_health",
@@ -39,8 +40,22 @@ def validate(input: AssessmentInput) -> ValidationOutcome:
     if input.hip_cm <= 0 or input.hip_cm > 250:
         outcome.errors.append("Hip must be a positive value up to 250 cm.")
 
-    if not (0 <= input.body_fat_percent <= 100):
-        outcome.errors.append("Body fat percentage must be between 0 and 100.")
+    estimation_error = resolve_body_fat(input)
+    if estimation_error:
+        outcome.errors.append(estimation_error)
+    elif input.body_fat_percent is None or not (2 <= input.body_fat_percent <= 75):
+        outcome.errors.append("Body fat percentage must be between 2 and 75.")
+
+    if not (80 <= input.peak_heart_rate_bpm <= 230):
+        outcome.errors.append("Peak heart rate must be between 80 and 230 bpm.")
+    if not (40 <= input.heart_rate_after_60s_bpm <= 230):
+        outcome.errors.append("Heart rate 60 seconds after exercise must be between 40 and 230 bpm.")
+    if input.heart_rate_after_60s_bpm > input.peak_heart_rate_bpm:
+        outcome.errors.append("Heart rate 60 seconds after exercise can't be higher than the peak heart rate.")
+    elif input.heart_rate_recovery_bpm > 100:
+        outcome.errors.append("A heart-rate drop of more than 100 bpm in 60 seconds isn't plausible.")
+    if input.peak_heart_rate_bpm <= input.resting_heart_rate_bpm:
+        outcome.errors.append("Peak heart rate after exercise must be higher than the resting heart rate.")
 
     if not (60 <= input.systolic_bp_mmhg <= 260):
         outcome.errors.append("Systolic blood pressure must be between 60 and 260 mmHg.")

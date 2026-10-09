@@ -77,8 +77,8 @@ a {
   top: 0;
   z-index: 10;
   background: rgba(246, 244, 239, 0.7);
-  backdrop-filter: var(--blur-surface);
   -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -282,8 +282,8 @@ a {
 /* ---------- Surfaces ---------- */
 .card {
   background: var(--color-surface);
-  backdrop-filter: var(--blur-surface);
   -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-soft);
@@ -394,6 +394,11 @@ a {
 
   .topbar-inner {
     padding: 12px 18px;
+    gap: 10px;
+  }
+
+  .nav-links {
+    gap: 2px;
   }
 
   .brand-tag {

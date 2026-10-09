@@ -30,5 +30,8 @@ all.AddRange(ProfileTests.All());
 Console.WriteLine("-- Profile context & sex/age-aware scoring --");
 all.AddRange(ProfileContextTests.All());
 
+Console.WriteLine("-- Parameter set v2 (substances / body-fat estimation / HRR / legacy 39) --");
+all.AddRange(ParameterSetV2Tests.All());
+
 var failed = TestRunner.Run(all);
 Environment.Exit(failed == 0 ? 0 : 1);

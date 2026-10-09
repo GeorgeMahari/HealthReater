@@ -81,10 +81,14 @@ public static class ScorerTests
             Assert.Equal(10, HeartRateScorer.ScoreRecovery(30), "HRR 30bpm");
         }),
 
-        ("Substance: never scores 10, daily scores 1", () =>
+        ("Substance: alcohol, tobacco and drugs each score never = 10, daily = 1", () =>
         {
-            Assert.Equal(10, SubstanceScorer.Score(SubstanceFrequency.Never), "Substance never");
-            Assert.Equal(1, SubstanceScorer.Score(SubstanceFrequency.Daily), "Substance daily");
+            foreach (var (name, score) in new (string, Func<SubstanceFrequency, int>)[]
+                     { ("Alcohol", SubstanceScorer.ScoreAlcohol), ("Tobacco", SubstanceScorer.ScoreTobacco), ("Drugs", SubstanceScorer.ScoreDrugs) })
+            {
+                Assert.Equal(10, score(SubstanceFrequency.Never), $"{name} never");
+                Assert.Equal(1, score(SubstanceFrequency.Daily), $"{name} daily");
+            }
         }),
 
         ("PhysicalTraining: 5 sessions/week lands near max", () =>

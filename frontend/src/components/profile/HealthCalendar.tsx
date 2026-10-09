@@ -202,7 +202,7 @@ function DayPanel({ date, entries, onClose }: { date: string; entries: CalendarE
           <div className="day-scan-top">
             <span className="day-scan-time">{formatTime(entry.completedAt)}</span>
             <span className="day-scan-total">
-              <strong>{entry.totalHealthRating}</strong> / 390
+              <strong>{entry.totalHealthRating}</strong> / {entry.maxHealthRating}
             </span>
           </div>
           <ul className="state-bars">

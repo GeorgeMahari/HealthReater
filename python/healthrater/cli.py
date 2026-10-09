@@ -23,7 +23,9 @@ def _input_from_json(path: str) -> AssessmentInput:
         raw = json.load(f)
 
     raw["sex"] = Sex(raw["sex"])
-    raw["alcohol_tobacco_drugs_frequency"] = SubstanceFrequency(raw["alcohol_tobacco_drugs_frequency"])
+    for key in ("alcohol_frequency", "tobacco_frequency", "drugs_frequency"):
+        raw[key] = SubstanceFrequency(raw[key])
+    raw.setdefault("body_fat_percent", None)  # omitted/null = estimate it
     return AssessmentInput(**raw)
 
 
@@ -52,6 +54,8 @@ def _print_result(input: AssessmentInput) -> int:
     print(f"  BMI:  {result.derived_metrics.bmi}")
     print(f"  WHtR: {result.derived_metrics.whtr}")
     print(f"  WHR:  {result.derived_metrics.whr}")
+    print(f"  Body fat: {result.body_fat_percent}% ({result.body_fat_source.value})")
+    print(f"  Heart Rate Recovery: {result.heart_rate_recovery_bpm} bpm")
     print()
     print("Full JSON:")
     print(json.dumps(dataclasses.asdict(result), default=str, indent=2))

@@ -150,17 +150,17 @@ public static class ProfileContextTests
         }),
 
         // ---------- Engine invariants ----------
-        ("Scoring: still exactly 39 scored parameters, 390 maximum, four states intact", () =>
+        ("Scoring: exactly 41 scored parameters, 410 maximum, four states intact", () =>
         {
             var answers = SampleProfile.Healthy();
             foreach (var context in new[] { new ProfileSnapshot(Sex.Male, 20, 180, 78), new ProfileSnapshot(Sex.Male, 60, 180, 78), new ProfileSnapshot(Sex.Female, 20, 165, 60), new ProfileSnapshot(Sex.Female, 60, 165, 60) })
             {
                 var result = HealthRatingEngine.Calculate(answers, context);
-                Assert.Equal(39, result.ParameterScores.Count, $"39 parameters for {context}");
-                Assert.Equal(390, result.MaxHealthRating, "Max 390");
+                Assert.Equal(41, result.ParameterScores.Count, $"41 parameters for {context}");
+                Assert.Equal(410, result.MaxHealthRating, "Max 410");
                 Assert.Equal(result.ParameterScores.Values.Sum(), result.TotalHealthRating, "Total is the sum");
                 Assert.True(new[] { "sex", "age", "height", "weight" }.All(result.ParameterScores.ContainsKey),
-                    "Sex, age, height and weight stay parameters #1–#4 of the 39 (no extra parameters)");
+                    "Sex, age, height and weight stay parameters #1–#4 (no extra parameters)");
                 Assert.True(result.FourStates.Longevity.MaxRawScore > 0 && result.FourStates.EnergyStrengthStamina.MaxRawScore > 0, "Four states computed");
             }
             var young = HealthRatingEngine.Calculate(answers, new ProfileSnapshot(Sex.Male, 20, 180, 78));

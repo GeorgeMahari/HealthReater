@@ -1,3 +1,5 @@
+using HealthRater.Core.Models;
+
 namespace HealthRater.Data.Entities;
 
 public enum AssessmentStatus
@@ -36,6 +38,13 @@ public class HealthAssessment
     /// <summary>Scoring configuration version used (<c>HealthRatingEngine.ScoringVersion</c>).</summary>
     public string ScoringVersion { get; set; } = "";
 
+    /// <summary>
+    /// Parameter set used (<c>ParameterSet.Version</c>): "v2-41" for new assessments, "v1-39" for
+    /// assessments saved before alcohol, tobacco and drugs were split. Old rows keep their 39
+    /// parameter scores and 390 maximum.
+    /// </summary>
+    public string ParameterSetVersion { get; set; } = "";
+
     // ---- Totals ----
     public int TotalHealthRating { get; set; }
     public int TotalPossibleScore { get; set; }
@@ -54,7 +63,12 @@ public class HealthAssessment
 
     // ---- Cardiovascular ----
     public int RestingHeartRate { get; set; }
+    /// <summary>Heart Rate Recovery in bpm (peak minus HR 60 s after stopping).</summary>
     public int HeartRateRecovery { get; set; }
+    /// <summary>Peak heart rate of the HRR protocol (null for assessments before the standardized protocol).</summary>
+    public int? PeakHeartRate { get; set; }
+    /// <summary>Heart rate exactly 60 s after exercise stopped (null for older assessments).</summary>
+    public int? HeartRateAfter60Seconds { get; set; }
     public int BloodPressureSystolic { get; set; }
     public int BloodPressureDiastolic { get; set; }
 
@@ -74,6 +88,10 @@ public class HealthAssessment
     public double Hip { get; set; }
     public string HipUnit { get; set; } = "cm";
     public double BodyFatPercentage { get; set; }
+    /// <summary>Measured (entered by the user) or Estimated (calculated by HealthRater).</summary>
+    public BodyFatSource BodyFatSource { get; set; } = BodyFatSource.Measured;
+    /// <summary>Estimation method id when estimated, e.g. "Deurenberg1991".</summary>
+    public string? BodyFatEstimationMethod { get; set; }
 
     /// <summary>
     /// The complete AssessmentInput as submitted (JSON), so the original answers can be

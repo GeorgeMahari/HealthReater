@@ -18,7 +18,7 @@ interface LineChartProps {
   /** Series colour (marks only — text always uses text tokens). */
   color: string;
   height: number;
-  /** Formats a value for the tooltip and end label, e.g. v => `${v} / 390`. */
+  /** Formats a value for the tooltip and end label, e.g. v => `${v} / 410`. */
   formatValue: (v: number) => string;
   /** Accessible summary of the chart. */
   ariaLabel: string;

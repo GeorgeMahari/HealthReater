@@ -32,6 +32,7 @@ public static class AssessmentSnapshotBuilder
             UpdatedAt = utcNow,
             CompletedAt = utcNow,
             ScoringVersion = HealthRatingEngine.ScoringVersion,
+            ParameterSetVersion = result.ParameterSetVersion,
 
             TotalHealthRating = result.TotalHealthRating,
             TotalPossibleScore = result.MaxHealthRating,
@@ -48,6 +49,8 @@ public static class AssessmentSnapshotBuilder
 
             RestingHeartRate = input.RestingHeartRateBpm,
             HeartRateRecovery = input.HeartRateRecoveryBpm,
+            PeakHeartRate = input.PeakHeartRateBpm,
+            HeartRateAfter60Seconds = input.HeartRateAfter60sBpm,
             BloodPressureSystolic = input.SystolicBpMmHg,
             BloodPressureDiastolic = input.DiastolicBpMmHg,
 
@@ -62,10 +65,18 @@ public static class AssessmentSnapshotBuilder
             WaistUnit = "cm",
             Hip = input.HipCm,
             HipUnit = "cm",
-            BodyFatPercentage = input.BodyFatPercent,
+            BodyFatPercentage = result.BodyFat.Percent,
+            BodyFatSource = result.BodyFat.Source,
+            BodyFatEstimationMethod = result.BodyFat.EstimationMethod,
 
             InputSnapshotJson = JsonSerializer.Serialize(input, JsonOptions),
         };
+
+        if (result.ParameterScores.Count != ParameterCatalog.All.Count)
+        {
+            throw new InvalidOperationException(
+                $"Engine returned {result.ParameterScores.Count} scores; the catalog has {ParameterCatalog.All.Count} parameters.");
+        }
 
         foreach (var definition in ParameterCatalog.All)
         {

@@ -15,7 +15,8 @@ public static class SampleProfile
         HipCm = 98,
         BodyFatPercent = 16,
         RestingHeartRateBpm = 58,
-        HeartRateRecoveryBpm = 28,
+        PeakHeartRateBpm = 170,
+        HeartRateAfter60sBpm = 142, // HRR 28 bpm
         SystolicBpMmHg = 115,
         DiastolicBpMmHg = 74,
         EnergyLevel = 8,
@@ -33,7 +34,9 @@ public static class SampleProfile
         CaffeineServingsPerDay = 1,
         JunkFoodServingsPerWeek = 2,
         OvereatingEpisodesPerWeek = 1,
-        AlcoholTobaccoDrugsFrequency = SubstanceFrequency.Rarely,
+        AlcoholFrequency = SubstanceFrequency.Rarely,
+        TobaccoFrequency = SubstanceFrequency.Rarely,
+        DrugsFrequency = SubstanceFrequency.Rarely,
         VegetablesFiberServingsPerDay = 4,
         DailyStepsNeat = 9000,
         TrainingSessionsPerWeek = 5,
@@ -54,7 +57,8 @@ public static class SampleProfile
         var p = Healthy();
         p.BodyFatPercent = 40;
         p.RestingHeartRateBpm = 110;
-        p.HeartRateRecoveryBpm = 3;
+        p.PeakHeartRateBpm = 150;
+        p.HeartRateAfter60sBpm = 147; // HRR 3 bpm
         p.SystolicBpMmHg = 170;
         p.DiastolicBpMmHg = 100;
         p.EnergyLevel = 1; p.EnergyStability = 1; p.AverageSleepQuality = 1; p.CircadianHealth = 1;
@@ -64,7 +68,9 @@ public static class SampleProfile
         p.CaffeineServingsPerDay = 10;
         p.JunkFoodServingsPerWeek = 25;
         p.OvereatingEpisodesPerWeek = 10;
-        p.AlcoholTobaccoDrugsFrequency = SubstanceFrequency.Daily;
+        p.AlcoholFrequency = SubstanceFrequency.Daily;
+        p.TobaccoFrequency = SubstanceFrequency.Daily;
+        p.DrugsFrequency = SubstanceFrequency.Daily;
         p.VegetablesFiberServingsPerDay = 0;
         p.DailyStepsNeat = 500;
         p.TrainingSessionsPerWeek = 0;

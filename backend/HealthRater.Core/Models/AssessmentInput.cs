@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HealthRater.Core.Scoring.BodyFat;
 
 namespace HealthRater.Core.Models;
 
@@ -20,15 +21,30 @@ public class AssessmentAnswers
     [Range(30, 250, ErrorMessage = "Hip must be between 30 and 250 cm.")]
     public double HipCm { get; set; }
 
-    [Range(0, 100, ErrorMessage = "Body fat percentage must be between 0 and 100.")]
-    public double BodyFatPercent { get; set; }
+    /// <summary>
+    /// Measured body-fat percentage, or null when the user doesn't know it: HealthRater then
+    /// estimates it (see BodyFatEstimation) and records the source as Estimated.
+    /// </summary>
+    [Range(2, 75, ErrorMessage = "Body fat percentage must be between 2 and 75.")]
+    public double? BodyFatPercent { get; set; }
 
     // ---------- 3. Cardiovascular ----------
     [Range(30, 220, ErrorMessage = "Resting heart rate must be between 30 and 220 bpm.")]
     public int RestingHeartRateBpm { get; set; }
 
-    [Range(0, 100, ErrorMessage = "Heart-rate recovery (1-minute drop) must be between 0 and 100 bpm.")]
-    public int HeartRateRecoveryBpm { get; set; }
+    /// <summary>Highest heart rate reached at the end of the standardized exercise.</summary>
+    [Range(80, 230, ErrorMessage = "Peak heart rate must be between 80 and 230 bpm.")]
+    public int PeakHeartRateBpm { get; set; }
+
+    /// <summary>Heart rate measured exactly 60 seconds after exercise stops.</summary>
+    [Range(40, 230, ErrorMessage = "Heart rate 60 seconds after exercise must be between 40 and 230 bpm.")]
+    public int HeartRateAfter60sBpm { get; set; }
+
+    /// <summary>
+    /// Heart Rate Recovery: the drop in the first 60 seconds after exercise stops
+    /// (peak minus after 60 s). Always calculated, never entered.
+    /// </summary>
+    public int HeartRateRecoveryBpm => PeakHeartRateBpm - HeartRateAfter60sBpm;
 
     [Range(60, 260, ErrorMessage = "Systolic blood pressure must be between 60 and 260 mmHg.")]
     public int SystolicBpMmHg { get; set; }
@@ -50,7 +66,8 @@ public class AssessmentAnswers
     [Range(1, 10)] public int HomeFamilySatisfaction { get; set; }
 
     // ---------- 6. Lifestyle ----------
-    [Range(0, 10, ErrorMessage = "Daily water intake must be between 0 and 10 liters.")]
+    /// <summary>Liters/day. The web UI asks in ml/day and converts (1000 ml = 1 L) before sending.</summary>
+    [Range(0, 10, ErrorMessage = "Daily water intake must be between 0 and 10,000 ml (10 L) per day.")]
     public double DailyWaterIntakeLiters { get; set; }
 
     [Range(1, 10)] public int DigestionAndEvacuation { get; set; }
@@ -65,8 +82,16 @@ public class AssessmentAnswers
     [Range(0, 21, ErrorMessage = "Overeating episodes/week must be between 0 and 21.")]
     public double OvereatingEpisodesPerWeek { get; set; }
 
-    [Required]
-    public SubstanceFrequency AlcoholTobaccoDrugsFrequency { get; set; }
+    // Alcohol, tobacco and recreational drugs are three independent parameters (v2 parameter
+    // set). Before v2 they were one combined "alcohol / tobacco / drugs" answer.
+    [Required(ErrorMessage = "Alcohol consumption is required.")]
+    public SubstanceFrequency? AlcoholFrequency { get; set; }
+
+    [Required(ErrorMessage = "Tobacco / smoking is required.")]
+    public SubstanceFrequency? TobaccoFrequency { get; set; }
+
+    [Required(ErrorMessage = "Recreational drug use is required.")]
+    public SubstanceFrequency? DrugsFrequency { get; set; }
 
     [Range(0, 15, ErrorMessage = "Vegetable/fiber servings/day must be between 0 and 15.")]
     public double VegetablesFiberServingsPerDay { get; set; }
@@ -101,7 +126,7 @@ public class AssessmentAnswers
 /// <summary>
 /// Everything the scoring engine needs: the questionnaire answers plus the profile data at
 /// the time of the assessment (sex, age, height, weight). These four are parameters #1–#4 of
-/// the 39; sex and age are also context for sex/age-aware parameters (body fat, WHR,
+/// the parameter set (see ParameterSet); sex and age are also context for sex/age-aware parameters (body fat, WHR,
 /// functional power), and height/weight feed BMI, WHtR and hydration.
 /// </summary>
 public class AssessmentInput : AssessmentAnswers
@@ -118,7 +143,20 @@ public class AssessmentInput : AssessmentAnswers
     [Range(20, 400, ErrorMessage = "Weight must be between 20 and 400 kg.")]
     public double WeightKg { get; set; }
 
-    /// <summary>Combines questionnaire answers with the profile data into one scoring input.</summary>
+    /// <summary>Measured (entered) or Estimated (BodyFatPercent was calculated by HealthRater).</summary>
+    public BodyFatSource BodyFatSource { get; set; } = BodyFatSource.Measured;
+
+    /// <summary>Estimation method id when BodyFatSource is Estimated, e.g. "Deurenberg1991".</summary>
+    public string? BodyFatEstimationMethod { get; set; }
+
+    /// <summary>Set when body fat was unknown and couldn't be estimated plausibly.</summary>
+    public string? BodyFatEstimationError { get; set; }
+
+    /// <summary>
+    /// Combines questionnaire answers with the profile data into one scoring input. When the
+    /// body-fat percentage is unknown (null) it is estimated here with the configured
+    /// estimator, so the estimated value is scored exactly like a measured one.
+    /// </summary>
     public static AssessmentInput From(AssessmentAnswers answers, ProfileSnapshot profile)
     {
         var input = new AssessmentInput
@@ -128,11 +166,28 @@ public class AssessmentInput : AssessmentAnswers
             HeightCm = profile.HeightCm,
             WeightKg = profile.WeightKg,
         };
-        foreach (var property in typeof(AssessmentAnswers).GetProperties())
+        foreach (var property in typeof(AssessmentAnswers).GetProperties().Where(p => p.CanWrite))
         {
             property.SetValue(input, property.GetValue(answers));
         }
+        input.ResolveBodyFat();
         return input;
+    }
+
+    /// <summary>Estimates body fat when it wasn't entered. Idempotent.</summary>
+    public void ResolveBodyFat()
+    {
+        if (BodyFatPercent is not null) return;
+        var (estimate, error) = BodyFatEstimation.TryEstimate(BodyFatEstimation.InputFor(this));
+        if (estimate is null)
+        {
+            BodyFatEstimationError = error;
+            return;
+        }
+        BodyFatPercent = estimate.BodyFatPercent;
+        BodyFatSource = BodyFatSource.Estimated;
+        BodyFatEstimationMethod = estimate.MethodId;
+        BodyFatEstimationError = null;
     }
 }
 

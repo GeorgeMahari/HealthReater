@@ -4,8 +4,9 @@ import { ScoreCard } from "../ScoreCard";
 import { TotalRatingCard } from "../TotalRatingCard";
 import { Tooltip } from "../Tooltip";
 import { HealthSignalVisual } from "../visual/HealthSignalVisual";
-import { parameterGroups, parameterLabels, sectionIcons, stateMeta, termTooltips } from "../../data/uiMeta";
-import type { AssessmentAnswers, HealthRatingResult } from "../../types";
+import { BODY_FAT_ESTIMATE_TOOLTIP, parameterGroups, parameterLabels, sectionIcons, stateMeta, termTooltips } from "../../data/uiMeta";
+import { MAX_TOTAL_SCORE } from "../../config/parameters";
+import { heartRateRecoveryOf, type AssessmentAnswers, type AssessmentDetail, type BodyFatSource, type HealthRatingResult } from "../../types";
 
 interface ResultsViewProps {
   result: HealthRatingResult;
@@ -37,6 +38,18 @@ export function ResultsView({ result, input, eyebrow, title, note, actions, prof
   );
   const strongest = ranked[0];
   const focus = ranked[ranked.length - 1];
+
+  // Body fat and HRR from the saved snapshot when available (live results are saved too);
+  // older (v1) snapshots have no protocol readings, so those rows show "—".
+  const saved = result as Partial<AssessmentDetail>;
+  const bodyFat = saved.body?.bodyFatPercentage ?? (input.bodyFatPercent === "" ? undefined : input.bodyFatPercent);
+  const bodyFatSource: BodyFatSource =
+    saved.body?.bodyFatSource ?? (input.bodyFatMode === "unknown" ? "Estimated" : "Measured");
+  const hrr = saved.cardiovascular?.heartRateRecovery ?? heartRateRecoveryOf(input);
+  const peak = saved.cardiovascular ? saved.cardiovascular.peakHeartRate : input.peakHeartRateBpm;
+  const after60 = saved.cardiovascular ? saved.cardiovascular.heartRateAfter60Seconds : input.heartRateAfter60sBpm;
+  const parameterCount = Object.keys(parameterScores).length;
+  const isLegacy = maxHealthRating !== MAX_TOTAL_SCORE;
 
   const groupedKeys = new Set(parameterGroups.flatMap((g) => g.keys));
   const otherKeys = Object.keys(parameterScores).filter((k) => !groupedKeys.has(k));
@@ -106,7 +119,9 @@ export function ResultsView({ result, input, eyebrow, title, note, actions, prof
           <MetricRow label="WHR" tip={termTooltips.whr} value={String(derivedMetrics.whr)} score={parameterScores.whr} />
           <MetricRow
             label="Body Fat"
-            value={withUnit(input.bodyFatPercent, "%")}
+            value={withUnit(bodyFat ?? "", "%")}
+            badge={bodyFatSource}
+            tip={bodyFatSource === "Estimated" ? BODY_FAT_ESTIMATE_TOOLTIP : undefined}
             score={parameterScores.bodyFat}
           />
         </MetricPanel>
@@ -127,17 +142,25 @@ export function ResultsView({ result, input, eyebrow, title, note, actions, prof
           <MetricRow
             label="Heart Rate Recovery"
             tip={termTooltips.heartRateRecovery}
-            value={withUnit(input.heartRateRecoveryBpm, "")}
-            unit="bpm drop"
+            value={withUnit(hrr ?? "", "")}
+            unit="bpm"
             score={parameterScores.heartRateRecovery}
           />
+          <MetricRow label="Peak HR" value={withUnit(peak ?? "", "")} unit="bpm" sub />
+          <MetricRow label="HR after 60 s" value={withUnit(after60 ?? "", "")} unit="bpm" sub />
         </MetricPanel>
       </div>
 
       <section className="reveal-late" aria-labelledby="params-heading">
         <div className="section-head">
           <p className="eyebrow">Detailed parameters</p>
-          <h2 id="params-heading">All {Object.keys(parameterScores).length} Parameter Scores</h2>
+          <h2 id="params-heading">All {parameterCount} Parameter Scores</h2>
+          {isLegacy && (
+            <p className="section-note legacy-note">
+              Recorded with the earlier {parameterCount}-parameter set (maximum {maxHealthRating}), when alcohol, tobacco
+              and drugs were one combined parameter. Its scores are shown exactly as saved.
+            </p>
+          )}
         </div>
         <div className="param-groups">
           {groups.map((group) => {
@@ -157,6 +180,7 @@ export function ResultsView({ result, input, eyebrow, title, note, actions, prof
                       name={key}
                       score={parameterScores[key]}
                       profileValue={profileValueFor(key, profileContext)}
+                      badge={key === "bodyFat" && bodyFatSource === "Estimated" ? "Estimated" : undefined}
                     />
                   ))}
                 </ul>
@@ -191,17 +215,24 @@ function MetricRow({
   unit,
   score,
   tip,
+  badge,
+  sub,
 }: {
   label: string;
   value: string;
   unit?: string;
   score?: number;
   tip?: string;
+  /** "Measured" / "Estimated" marker for body fat. */
+  badge?: BodyFatSource;
+  /** A supporting reading of the row above (no score of its own). */
+  sub?: boolean;
 }) {
   return (
-    <div className="metric-row">
+    <div className={`metric-row ${sub ? "metric-row-sub" : ""}`}>
       <dt>
         {label}
+        {badge && <span className={`source-badge source-${badge.toLowerCase()}`}>{badge}</span>}
         {tip && <Tooltip text={tip} label={`About ${label}`} />}
       </dt>
       <dd className="metric-value">
@@ -228,8 +259,8 @@ function profileValueFor(key: string, context: ResultsViewProps["profileContext"
   return undefined;
 }
 
-function ParamRow({ name, score, profileValue }: { name: string; score: number; profileValue?: string }) {
-  const tip = termTooltips[name];
+function ParamRow({ name, score, profileValue, badge }: { name: string; score: number; profileValue?: string; badge?: BodyFatSource }) {
+  const tip = badge === "Estimated" ? BODY_FAT_ESTIMATE_TOOLTIP : termTooltips[name];
   if (profileValue !== undefined) {
     return (
       <li className="param-row param-row-profile">
@@ -245,6 +276,7 @@ function ParamRow({ name, score, profileValue }: { name: string; score: number; 
     <li className={`param-row ${scoreTone(score)}`}>
       <span className="param-name">
         {formatKey(name)}
+        {badge && <span className={`source-badge source-${badge.toLowerCase()}`}>{badge}</span>}
         {tip && <Tooltip text={tip} label={`About ${formatKey(name)}`} />}
       </span>
       <ScoreBar score={score} />
@@ -267,8 +299,8 @@ function scoreTone(score: number): string {
   return "tone-low";
 }
 
-function withUnit(value: number | string | "", unit: string): string {
-  return value === "" || value === undefined ? "—" : `${value}${unit}`;
+function withUnit(value: number | string | "" | null | undefined, unit: string): string {
+  return value === "" || value === undefined || value === null ? "—" : `${value}${unit}`;
 }
 
 function bloodPressure(a: AssessmentAnswers): string {
