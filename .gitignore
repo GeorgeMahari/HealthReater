@@ -43,3 +43,4 @@ appsettings.*.local.json
 # OS
 .DS_Store
 Thumbs.db
+python/healthrater/__init__.py
